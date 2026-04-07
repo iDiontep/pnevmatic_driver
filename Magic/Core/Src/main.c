@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "receiver.h"
 #include "app.h"
+#include "tb6560.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,7 +105,7 @@ int main(void)
   MX_CRC_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-
+  tb6560_init(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */

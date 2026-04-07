@@ -66,8 +66,8 @@ all: main-build
 main-build: Magic.elf secondary-outputs
 
 # Tool invocations
-Magic.elf Magic.map: $(OBJS) $(USER_OBJS) C:\workspace\mifi2\stmproj\Magic\STM32F373CCTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Magic.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\workspace\mifi2\stmproj\Magic\STM32F373CCTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Magic.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Magic.elf Magic.map: $(OBJS) $(USER_OBJS) C:\workspace\mifi2\stmproj\pnevmatic_driver\Magic\STM32F373CCTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Magic.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\workspace\mifi2\stmproj\pnevmatic_driver\Magic\STM32F373CCTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Magic.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

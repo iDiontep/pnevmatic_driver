@@ -1,0 +1,12 @@
+../Hardware_drivers/Src/tb6560.c:17:17:tim2_cntclk_hz	2
+../Hardware_drivers/Src/tb6560.c:29:13:apply_step_timing	8
+../Hardware_drivers/Src/tb6560.c:60:6:tb6560_get_status	2
+../Hardware_drivers/Src/tb6560.c:71:6:tb6560_init	1
+../Hardware_drivers/Src/tb6560.c:85:6:tb6560_motor_enable	1
+../Hardware_drivers/Src/tb6560.c:97:6:tb6560_set_direction_forward	1
+../Hardware_drivers/Src/tb6560.c:104:6:tb6560_stop_steps	2
+../Hardware_drivers/Src/tb6560.c:118:6:tb6560_set_step_rate_hz	3
+../Hardware_drivers/Src/tb6560.c:136:13:move_steps_begin	1
+../Hardware_drivers/Src/tb6560.c:150:6:tb6560_move_steps_start	4
+../Hardware_drivers/Src/tb6560.c:158:6:tb6560_move_steps_blocking	5
+../Hardware_drivers/Src/tb6560.c:170:6:HAL_TIM_PeriodElapsedCallback	4
