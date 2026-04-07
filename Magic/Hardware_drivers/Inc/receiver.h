@@ -29,6 +29,7 @@
  *    GET APS PARAM
  *
  *  === Категория MOT (драйвер TB6560 по USB) ===
+ *  Текущее состояние: глобальный motor_data (tb6560.h); tb6560_get_status() — копия в буфер хоста.
  *  Только с префиксом EFGH:
  *    EFGH SET MOT EN 0|1          — выкл/вкл обмотки (motor enable)
  *    EFGH SET MOT DIR 0|1|REV|FWD — направление: 0 или REV = назад, 1 или FWD = вперёд

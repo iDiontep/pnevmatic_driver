@@ -42,17 +42,24 @@ typedef enum
   TB6560_MOTION_MOVE,
 } tb6560_motion_t;
 
-/** Снимок состояния драйвера (USB/отладка). */
-typedef struct
+/**
+ * Состояние мотора: категория MOT (USB), поля как в ответе GET MOT STAT.
+ * steps_remaining обновляется из прерывания таймера — volatile.
+ */
+typedef struct motor
 {
   bool motor_enabled;
   bool direction_forward;
   tb6560_motion_t motion;
   uint32_t step_hz;
-  uint32_t steps_remaining;
-} tb6560_status_t;
+  volatile uint32_t steps_remaining;
+} motor_t;
 
-void tb6560_get_status(tb6560_status_t *out);
+/** Текущее состояние мотора; обновляется драйвером TB6560 и при MOT-командах по USB. */
+extern motor_t motor_data;
+
+/** Копия motor_data в *out (удобно для согласованного снимка всех полей). */
+void tb6560_get_status(motor_t *out);
 
 /**
  * Непрерывная генерация импульсов STEP (частота шагов на входе CLK драйвера).

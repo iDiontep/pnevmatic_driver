@@ -34,7 +34,7 @@
 
 static void mot_reply_stat(void)
 {
-  tb6560_status_t st;
+  motor_t st;
   tb6560_get_status(&st);
 
   const char *mode_str = "IDLE";
