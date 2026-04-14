@@ -1,3 +1,6 @@
-../Hardware_drivers/Src/receiver.c:35:13:mot_reply_stat	152	static
-../Hardware_drivers/Src/receiver.c:63:13:cli_process	344	static
-../Hardware_drivers/Src/receiver.c:269:6:Receiver_OnData	288	static
+../Hardware_drivers/Src/receiver.c:36:13:receiver_replyf	128	static
+../Hardware_drivers/Src/receiver.c:51:12:receiver_prefix_is_efgh_ci	24	static
+../Hardware_drivers/Src/receiver.c:60:13:mot_reply_stat	152	static
+../Hardware_drivers/Src/receiver.c:88:13:cli_process	312	static
+../Hardware_drivers/Src/receiver.c:304:13:receiver_line_flush	328	static
+../Hardware_drivers/Src/receiver.c:399:6:Receiver_OnData	24	static

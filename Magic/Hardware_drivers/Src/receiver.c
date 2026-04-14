@@ -8,16 +8,16 @@
  *
  *  Протокол (согласованный контракт хост–прошивка):
  *  - Запросы: префикс EFGH, затем токены через пробел / , / =
- *  - Успех: OK\r\n или строка ответа GET
+ *  - Успех: для SET — строка «параметр значение» (см. ниже) или ответ GET
  *  - Ошибка: HGFE Error - ...\r\n
  *
  *  Категория MOT (TB6560):
  *  - EFGH SET MOT EN 0|1
  *  - EFGH SET MOT DIR 0|1|REV|FWD  (0=REV, 1=FWD)
- *  - EFGH SET MOT RUN <hz>  (hz=0 — стоп)
+ *  - EFGH SET MOT RUN|HZ <hz>  (синонимы; hz=0 — стоп)
  *  - EFGH SET MOT STOP
- *  - EFGH SET MOT MOVE <steps> <hz>  — неблокирующий ответ OK
- *  - EFGH GET MOT STAT → MOT STAT EN=u DIR=u MODE=IDLE|RUN|MOVE HZ=lu REM=lu\r\n
+ *  - EFGH SET MOT MOVE <steps> <hz>  — неблокирующий ответ MOT MOVE <steps> <hz>
+ *  - EFGH GET MOT STAT|ALL → та же строка MOT STAT … (ALL = синоним STAT)
  *
  *  При новой команде RUN / MOVE / STOP текущее движение отменяется (нет HGFE busy).
  */
@@ -31,6 +31,31 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <stdarg.h>
+
+static void receiver_replyf(const char *fmt, ...)
+{
+  char buf[112];
+  va_list ap;
+  va_start(ap, fmt);
+  int n = vsnprintf(buf, sizeof buf, fmt, ap);
+  va_end(ap);
+  if (n <= 0)
+    return;
+  if (n >= (int)sizeof buf)
+    n = (int)sizeof buf - 1;
+  CDC_Transmit_FS((uint8_t *)buf, (uint16_t)n);
+}
+
+/** То же условие, что strncmp(..., "EFGH", 4) после toupper в cli_process. */
+static int receiver_prefix_is_efgh_ci(const char *s)
+{
+  return s[0] && s[1] && s[2] && s[3]
+         && toupper((unsigned char)s[0]) == 'E'
+         && toupper((unsigned char)s[1]) == 'F'
+         && toupper((unsigned char)s[2]) == 'G'
+         && toupper((unsigned char)s[3]) == 'H';
+}
 
 static void mot_reply_stat(void)
 {
@@ -117,8 +142,12 @@ static void cli_process(char *buffer)
       if (argc >= 3 && strcmp(tokens[2], "DFLT") == 0)
       {
         app = dflt_app_params;
-        const char resp[] = "OK\r\n";
-        CDC_Transmit_FS((uint8_t *)resp, (uint16_t)(sizeof(resp) - 1));
+        receiver_replyf("APS DFLT %lu %u %lu %lu %lu\r\n",
+                        (unsigned long)app.minutes,
+                        (unsigned int)app.button,
+                        (unsigned long)app.param1,
+                        (unsigned long)app.param2,
+                        (unsigned long)app.param3);
         return;
       }
 
@@ -126,8 +155,7 @@ static void cli_process(char *buffer)
       {
         unsigned long value = strtoul(tokens[3], NULL, 10);
         app.param1 = (uint32_t)value;
-        const char resp[] = "OK\r\n";
-        CDC_Transmit_FS((uint8_t *)resp, (uint16_t)(sizeof(resp) - 1));
+        receiver_replyf("APS PARAM1 %lu\r\n", (unsigned long)app.param1);
         return;
       }
 
@@ -180,8 +208,9 @@ static void cli_process(char *buffer)
       {
         unsigned long v = strtoul(tokens[3], NULL, 10);
         tb6560_motor_enable(v != 0UL);
-        const char resp[] = "OK\r\n";
-        CDC_Transmit_FS((uint8_t *)resp, (uint16_t)(sizeof(resp) - 1));
+        motor_t st;
+        tb6560_get_status(&st);
+        receiver_replyf("MOT EN %u\r\n", (unsigned int)(st.motor_enabled ? 1U : 0U));
         return;
       }
 
@@ -196,28 +225,31 @@ static void cli_process(char *buffer)
           unsigned long v = strtoul(tokens[3], NULL, 10);
           tb6560_set_direction_forward(v != 0UL);
         }
-        const char resp[] = "OK\r\n";
-        CDC_Transmit_FS((uint8_t *)resp, (uint16_t)(sizeof(resp) - 1));
+        motor_t st;
+        tb6560_get_status(&st);
+        receiver_replyf("MOT DIR %u\r\n", (unsigned int)(st.direction_forward ? 1U : 0U));
         return;
       }
 
-      if (argc >= 4 && strcmp(tokens[2], "RUN") == 0)
+      if (argc >= 4
+          && (strcmp(tokens[2], "RUN") == 0 || strcmp(tokens[2], "HZ") == 0))
       {
         unsigned long hz = strtoul(tokens[3], NULL, 10);
         if (hz == 0UL)
           tb6560_stop_steps();
         else
           tb6560_set_step_rate_hz((uint32_t)hz);
-        const char resp[] = "OK\r\n";
-        CDC_Transmit_FS((uint8_t *)resp, (uint16_t)(sizeof(resp) - 1));
+        if (strcmp(tokens[2], "HZ") == 0)
+          receiver_replyf("MOT HZ %lu\r\n", (unsigned long)hz);
+        else
+          receiver_replyf("MOT RUN %lu\r\n", (unsigned long)hz);
         return;
       }
 
       if (argc >= 3 && strcmp(tokens[2], "STOP") == 0)
       {
         tb6560_stop_steps();
-        const char resp[] = "OK\r\n";
-        CDC_Transmit_FS((uint8_t *)resp, (uint16_t)(sizeof(resp) - 1));
+        receiver_replyf("MOT RUN %lu\r\n", 0UL);
         return;
       }
 
@@ -232,8 +264,7 @@ static void cli_process(char *buffer)
           return;
         }
         tb6560_move_steps_start((uint32_t)steps, (uint32_t)hz);
-        const char resp[] = "OK\r\n";
-        CDC_Transmit_FS((uint8_t *)resp, (uint16_t)(sizeof(resp) - 1));
+        receiver_replyf("MOT MOVE %lu %lu\r\n", steps, hz);
         return;
       }
 
@@ -244,7 +275,8 @@ static void cli_process(char *buffer)
 
     if (strcmp(cmd, "GET") == 0)
     {
-      if (argc >= 3 && strcmp(tokens[2], "STAT") == 0)
+      if (argc >= 3
+          && (strcmp(tokens[2], "STAT") == 0 || strcmp(tokens[2], "ALL") == 0))
       {
         mot_reply_stat();
         return;
@@ -266,20 +298,34 @@ static void cli_process(char *buffer)
 
 #define RECEIVER_CMD_BUF_SZ 128
 
-void Receiver_OnData(uint8_t *buf, uint32_t len)
+static char s_line_rx[RECEIVER_CMD_BUF_SZ];
+static size_t s_line_len;
+
+static void receiver_line_flush(void)
 {
-  if (!buf || len == 0)
+  if (s_line_len == 0U)
     return;
 
-  uint32_t in_len = len;
-
   char cmd[RECEIVER_CMD_BUF_SZ];
-  if (len >= sizeof(cmd))
-    len = sizeof(cmd) - 1;
-  memcpy(cmd, buf, len);
-  cmd[len] = '\0';
+  size_t n = s_line_len;
+  if (n >= sizeof(cmd))
+    n = sizeof(cmd) - 1U;
+  memcpy(cmd, s_line_rx, n);
+  cmd[n] = '\0';
+  s_line_len = 0U;
 
-  if (len >= 4 && strncmp(cmd, "EFGH", 4) == 0)
+  /* Терминал может добавить пробелы; префикс часто шлют в нижнем регистре — иначе уходит в echo. */
+  {
+    char *p = cmd;
+    while (*p == ' ' || *p == '\t')
+      p++;
+    if (p != cmd)
+      memmove(cmd, p, strlen(p) + 1U);
+  }
+  if (strlen(cmd) == 0U)
+    return;
+
+  if (receiver_prefix_is_efgh_ci(cmd))
   {
     cli_process(cmd);
     return;
@@ -289,8 +335,12 @@ void Receiver_OnData(uint8_t *buf, uint32_t len)
   if (strncmp(cmd, "SET APS DFLT", 12) == 0)
   {
     app = dflt_app_params;
-    const char resp[] = "OK\r\n";
-    CDC_Transmit_FS((uint8_t *)resp, (uint16_t)(sizeof(resp) - 1));
+    receiver_replyf("APS DFLT %lu %u %lu %lu %lu\r\n",
+                    (unsigned long)app.minutes,
+                    (unsigned int)app.button,
+                    (unsigned long)app.param1,
+                    (unsigned long)app.param2,
+                    (unsigned long)app.param3);
     return;
   }
 
@@ -299,8 +349,7 @@ void Receiver_OnData(uint8_t *buf, uint32_t len)
     char *p = cmd + 15;
     unsigned long value = strtoul(p, NULL, 10);
     app.param1 = (uint32_t)value;
-    const char resp[] = "OK\r\n";
-    CDC_Transmit_FS((uint8_t *)resp, (uint16_t)(sizeof(resp) - 1));
+    receiver_replyf("APS PARAM1 %lu\r\n", (unsigned long)app.param1);
     return;
   }
 
@@ -327,5 +376,42 @@ void Receiver_OnData(uint8_t *buf, uint32_t len)
     return;
   }
 
-  CDC_Transmit_FS(buf, (uint16_t)in_len);
+  /* MOT: короткая строка → тот же разбор, что и для EFGH … */
+  if (strncmp(cmd, "SET MOT ", 8) == 0 || strncmp(cmd, "GET MOT ", 8) == 0)
+  {
+    char wrapped[RECEIVER_CMD_BUF_SZ + 8];
+    int n = snprintf(wrapped, sizeof(wrapped), "EFGH %s", cmd);
+    if (n > 0 && n < (int)sizeof(wrapped))
+    {
+      cli_process(wrapped);
+      return;
+    }
+  }
+
+  CDC_Transmit_FS((uint8_t *)cmd, (uint16_t)strlen(cmd));
+}
+
+/**
+ * USB CDC часто вызывает приём по одному байту или коротким фрагментам: без сборки строки
+ * приходит только "E", затем "F", … — каждый фрагмент уходил в echo; на ПК склеивалось в EFGHGETMOTSTAT.
+ * Собираем до '\r' или '\n' (как терминал), затем разбираем одну команду.
+ */
+void Receiver_OnData(uint8_t *buf, uint32_t len)
+{
+  if (!buf || len == 0)
+    return;
+
+  for (uint32_t i = 0; i < len; i++)
+  {
+    uint8_t c = buf[i];
+    if (c == '\r' || c == '\n')
+    {
+      receiver_line_flush();
+      continue;
+    }
+    if (s_line_len + 1U >= RECEIVER_CMD_BUF_SZ)
+      receiver_line_flush();
+    if (s_line_len + 1U < RECEIVER_CMD_BUF_SZ)
+      s_line_rx[s_line_len++] = (char)c;
+  }
 }
