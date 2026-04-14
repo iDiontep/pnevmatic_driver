@@ -25,6 +25,7 @@
 #include "receiver.h"
 #include "app.h"
 #include "tb6560.h"
+#include "limits.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -106,6 +107,7 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   tb6560_init(&htim2);
+  limits_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -378,6 +380,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = TB6560_DIR_Pin|TB6560_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LIMIT_SW_MIN_Pin LIMIT_SW_MAX_Pin */
+  GPIO_InitStruct.Pin = LIMIT_SW_MIN_Pin | LIMIT_SW_MAX_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 

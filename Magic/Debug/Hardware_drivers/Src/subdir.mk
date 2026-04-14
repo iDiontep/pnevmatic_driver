@@ -6,16 +6,19 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Hardware_drivers/Src/Hardware_drivers.c \
+../Hardware_drivers/Src/limits.c \
 ../Hardware_drivers/Src/receiver.c \
 ../Hardware_drivers/Src/tb6560.c 
 
 OBJS += \
 ./Hardware_drivers/Src/Hardware_drivers.o \
+./Hardware_drivers/Src/limits.o \
 ./Hardware_drivers/Src/receiver.o \
 ./Hardware_drivers/Src/tb6560.o 
 
 C_DEPS += \
 ./Hardware_drivers/Src/Hardware_drivers.d \
+./Hardware_drivers/Src/limits.d \
 ./Hardware_drivers/Src/receiver.d \
 ./Hardware_drivers/Src/tb6560.d 
 
@@ -27,7 +30,7 @@ Hardware_drivers/Src/%.o Hardware_drivers/Src/%.su Hardware_drivers/Src/%.cyclo:
 clean: clean-Hardware_drivers-2f-Src
 
 clean-Hardware_drivers-2f-Src:
-	-$(RM) ./Hardware_drivers/Src/Hardware_drivers.cyclo ./Hardware_drivers/Src/Hardware_drivers.d ./Hardware_drivers/Src/Hardware_drivers.o ./Hardware_drivers/Src/Hardware_drivers.su ./Hardware_drivers/Src/receiver.cyclo ./Hardware_drivers/Src/receiver.d ./Hardware_drivers/Src/receiver.o ./Hardware_drivers/Src/receiver.su ./Hardware_drivers/Src/tb6560.cyclo ./Hardware_drivers/Src/tb6560.d ./Hardware_drivers/Src/tb6560.o ./Hardware_drivers/Src/tb6560.su
+	-$(RM) ./Hardware_drivers/Src/Hardware_drivers.cyclo ./Hardware_drivers/Src/Hardware_drivers.d ./Hardware_drivers/Src/Hardware_drivers.o ./Hardware_drivers/Src/Hardware_drivers.su ./Hardware_drivers/Src/limits.cyclo ./Hardware_drivers/Src/limits.d ./Hardware_drivers/Src/limits.o ./Hardware_drivers/Src/limits.su ./Hardware_drivers/Src/receiver.cyclo ./Hardware_drivers/Src/receiver.d ./Hardware_drivers/Src/receiver.o ./Hardware_drivers/Src/receiver.su ./Hardware_drivers/Src/tb6560.cyclo ./Hardware_drivers/Src/tb6560.d ./Hardware_drivers/Src/tb6560.o ./Hardware_drivers/Src/tb6560.su
 
 .PHONY: clean-Hardware_drivers-2f-Src
 

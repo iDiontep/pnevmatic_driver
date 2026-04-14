@@ -1,0 +1,7 @@
+../Hardware_drivers/Src/limits.c:22:13:limits_raw_low	16	static
+../Hardware_drivers/Src/limits.c:27:13:limits_debounce_step	24	static
+../Hardware_drivers/Src/limits.c:41:13:limits_debounce_sync	24	static
+../Hardware_drivers/Src/limits.c:49:6:limits_init	8	static
+../Hardware_drivers/Src/limits.c:55:6:limits_update	8	static
+../Hardware_drivers/Src/limits.c:61:6:limits_min_engaged	4	static
+../Hardware_drivers/Src/limits.c:66:6:limits_max_engaged	4	static

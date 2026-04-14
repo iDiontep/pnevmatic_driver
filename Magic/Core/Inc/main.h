@@ -67,6 +67,11 @@ void Error_Handler(void);
 #define TB6560_DIR_GPIO_Port GPIOA
 #define TB6560_EN_Pin GPIO_PIN_2
 #define TB6560_EN_GPIO_Port GPIOA
+/** Концевики: активный LOW (на GND), подтяжка вверх. PA3 — стоп при движении назад; PA4 — при движении вперёд. */
+#define LIMIT_SW_MIN_Pin GPIO_PIN_3
+#define LIMIT_SW_MIN_GPIO_Port GPIOA
+#define LIMIT_SW_MAX_Pin GPIO_PIN_4
+#define LIMIT_SW_MAX_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

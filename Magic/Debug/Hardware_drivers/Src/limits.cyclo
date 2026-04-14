@@ -1,0 +1,7 @@
+../Hardware_drivers/Src/limits.c:22:13:limits_raw_low	1
+../Hardware_drivers/Src/limits.c:27:13:limits_debounce_step	3
+../Hardware_drivers/Src/limits.c:41:13:limits_debounce_sync	1
+../Hardware_drivers/Src/limits.c:49:6:limits_init	1
+../Hardware_drivers/Src/limits.c:55:6:limits_update	1
+../Hardware_drivers/Src/limits.c:61:6:limits_min_engaged	1
+../Hardware_drivers/Src/limits.c:66:6:limits_max_engaged	1

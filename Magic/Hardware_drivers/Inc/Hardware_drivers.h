@@ -9,5 +9,6 @@
 #define HARDWARE_DRIVERS_H_
 
 #include "receiver.h"
+#include "limits.h"
 
 #endif /* HARDWARE_DRIVERS_H_ */
