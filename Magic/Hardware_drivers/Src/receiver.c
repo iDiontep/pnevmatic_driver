@@ -15,11 +15,13 @@
  *  Категории: APS (настройки), APD (данные), MOT (TB6560) — см. receiver.h.
  *
  *  При новой команде RUN / MOVE / STOP текущее движение отменяется (нет HGFE busy).
+ *  MOT RUN — переезд к координате; непрерывное — MOT HZ.
  */
 
 #include "receiver.h"
 #include "usbd_cdc_if.h"
 #include "app.h"
+#include "limits.h"
 #include "tb6560.h"
 
 #include <string.h>
@@ -27,6 +29,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 static void receiver_replyf(const char *fmt, ...)
 {
@@ -371,18 +374,97 @@ static void cli_process(char *buffer)
         return;
       }
 
-      if (argc >= 4
-          && (strcmp(tokens[2], "RUN") == 0 || strcmp(tokens[2], "HZ") == 0))
+      /** Непрерывное вращение только через MOT HZ ... (RUN переопределён на позицию). */
+      if (argc >= 4 && strcmp(tokens[2], "HZ") == 0)
       {
         unsigned long hz = strtoul(tokens[3], NULL, 10);
         if (hz == 0UL)
           tb6560_stop_steps();
         else
           tb6560_set_step_rate_hz((uint32_t)hz);
-        if (strcmp(tokens[2], "HZ") == 0)
-          receiver_replyf("MOT HZ %lu\r\n", (unsigned long)hz);
-        else
-          receiver_replyf("MOT RUN %lu\r\n", (unsigned long)hz);
+        receiver_replyf("MOT HZ %lu\r\n", (unsigned long)hz);
+        return;
+      }
+
+      /** RUN <X> — абсолютная логическая позиция в [APS POSITION_MIN, POSITION_MAX]. */
+      if (argc >= 4 && strcmp(tokens[2], "RUN") == 0)
+      {
+        if (app.settings.status != APS_STATUS_CALIB_OK)
+        {
+          const char error_response[] = "HGFE Error - APS not calibrated\r\n";
+          CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
+          return;
+        }
+
+        uint32_t pos_min = app.settings.position_min;
+        uint32_t pos_max = app.settings.position_max;
+        if (pos_max <= pos_min)
+        {
+          const char error_response[] = "HGFE Error - invalid APS position range\r\n";
+          CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
+          return;
+        }
+
+        unsigned long target_ul = strtoul(tokens[3], NULL, 10);
+        uint32_t          X       = (uint32_t)target_ul;
+        if (X < pos_min)
+          X = pos_min;
+        if (X > pos_max)
+          X = pos_max;
+
+        int64_t cur   = (int64_t)app.data.current_position;
+        int64_t tgt   = (int64_t)X;
+        int64_t delta = tgt - cur;
+        if (delta == 0)
+        {
+          receiver_replyf("MOT RUN %lu\r\n", (unsigned long)X);
+          return;
+        }
+
+        uint32_t steps = (uint32_t)(delta < 0 ? -delta : delta);
+        uint32_t hz    = app.settings.motor_speed;
+        if (hz == 0U)
+          hz = 1000U;
+
+        const bool logical_increase = delta > 0;
+        tb6560_set_direction_forward(
+            (app.settings.position_dir >= 0) ? logical_increase : !logical_increase);
+
+        tb6560_move_steps_start(steps, hz);
+
+        bool aborted_by_limit = false;
+        while (motor_data.steps_remaining > 0U)
+        {
+          limits_update();
+          const int32_t dir = app.settings.position_dir;
+          const bool    fwd = motor_data.direction_forward;
+          const bool toward_logical_min =
+              (dir >= 0) ? !fwd : fwd;
+          const bool toward_logical_max =
+              (dir >= 0) ? fwd : !fwd;
+
+          if (limits_logical_min_engaged() && toward_logical_min)
+          {
+            tb6560_stop_steps();
+            aborted_by_limit = true;
+            break;
+          }
+          if (limits_logical_max_engaged() && toward_logical_max)
+          {
+            tb6560_stop_steps();
+            aborted_by_limit = true;
+            break;
+          }
+        }
+
+        if (!aborted_by_limit)
+          app.data.current_position = X;
+        else if (limits_logical_min_engaged())
+          app.data.current_position = pos_min;
+        else if (limits_logical_max_engaged())
+          app.data.current_position = pos_max;
+
+        receiver_replyf("MOT RUN %lu\r\n", (unsigned long)app.data.current_position);
         return;
       }
 

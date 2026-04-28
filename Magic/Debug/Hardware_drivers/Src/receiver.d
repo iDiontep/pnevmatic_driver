@@ -42,7 +42,8 @@ Hardware_drivers/Src/receiver.o: ../Hardware_drivers/Src/receiver.c \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h \
- ../Logic/Inc/app.h ../Hardware_drivers/Inc/tb6560.h
+ ../Logic/Inc/app.h ../Hardware_drivers/Inc/limits.h \
+ ../Hardware_drivers/Inc/tb6560.h
 ../Hardware_drivers/Inc/receiver.h:
 ../USB_DEVICE/App/usbd_cdc_if.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h:
@@ -89,4 +90,5 @@ Hardware_drivers/Src/receiver.o: ../Hardware_drivers/Src/receiver.c \
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h:
 ../Logic/Inc/app.h:
+../Hardware_drivers/Inc/limits.h:
 ../Hardware_drivers/Inc/tb6560.h:

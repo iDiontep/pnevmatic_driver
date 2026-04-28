@@ -38,8 +38,9 @@
  *  Состояние: motor_data / tb6560_get_status().
  *  EFGH SET MOT EN 0|1          — ответ: MOT EN <0|1> + CRLF
  *  EFGH SET MOT DIR 0|1|REV|FWD — ответ: MOT DIR <0|1> + CRLF
- *  EFGH SET MOT RUN <hz>       — ответ: MOT RUN <hz> + CRLF (hz=0 — стоп такта)
- *  EFGH SET MOT HZ <hz>        — ответ: MOT HZ <hz> + CRLF
+ *  EFGH SET MOT RUN <X>        — поезд к абсолютной логической позиции X (концы APS POSITION_MIN/MAX);
+ *                                ответ: MOT RUN <текущая позиция после остановки> + CRLF; APS должен быть откалиброван
+ *  EFGH SET MOT HZ <hz>        — непрерывное вращение на hz Гц; ответ: MOT HZ <hz> (hz=0 — стоп такта)
  *  EFGH SET MOT STOP           — ответ: MOT RUN 0 + CRLF
  *  EFGH SET MOT MOVE <steps> <hz> — ответ: MOT MOVE <steps> <hz> + CRLF; steps и hz > 0
  *  EFGH GET MOT STAT | ALL    — ответ:
