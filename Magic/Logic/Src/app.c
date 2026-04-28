@@ -14,7 +14,7 @@ app_t app = {0};
 const app_t dflt_app_params = {
     .settings =
         {
-            .status        = 0x80085U,
+            .status = APS_STATUS_DFLT,
             .position_min  = 0U,
             .position_max  = 0U,
             .position_dir  = 1,

@@ -81,7 +81,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  app = dflt_app_params;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -108,7 +108,6 @@ int main(void)
   MX_CRC_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  app = dflt_app_params;
   {
     app_settings_t s;
     if (eeprom_try_load(&s))
@@ -116,7 +115,8 @@ int main(void)
   }
   tb6560_init(&htim2);
   limits_init();
-  service_calibrate_limits();
+  if (app.settings.status != APS_STATUS_CALIB_OK)
+    service_calibrate_limits();
   /* USER CODE END 2 */
 
   /* Infinite loop */

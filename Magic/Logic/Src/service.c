@@ -157,6 +157,7 @@ phase_a_done:
       app.settings.position_max = total_steps;
       tb6560_stop_steps();
       tb6560_motor_enable(false);
+      app.settings.status = APS_STATUS_CALIB_OK;
       (void)eeprom_save(&app.settings);
       return;
     }
@@ -178,6 +179,7 @@ phase_a_done:
         total_steps += chunk - rem;
         app.settings.position_max = total_steps;
         tb6560_motor_enable(false);
+        app.settings.status = APS_STATUS_CALIB_OK;
         (void)eeprom_save(&app.settings);
         return;
       }

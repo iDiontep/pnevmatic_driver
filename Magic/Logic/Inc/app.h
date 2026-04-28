@@ -16,12 +16,17 @@ extern "C" {
 /** APS — настройки приложения */
 typedef struct
 {
-  uint32_t status;      /**< флаги состояния APS */
+  uint32_t status;      /**< APS_STATUS_DFLT / APS_STATUS_CALIB_OK см. ниже */
   uint32_t position_min;
   uint32_t position_max;
   int32_t  position_dir; /**< логический смысл лимитов: 1 или -1 */
   uint32_t motor_speed; /**< Гц STEP; 0 недопустим в протоколе — подставить дефолт 1000 */
 } app_settings_t;
+
+/** DFLT и состояние «ещё не откалибровано» по умолчанию */
+#define APS_STATUS_DFLT ((uint32_t)0x000B00B5u)
+/** После успешной калибровки концевиков */
+#define APS_STATUS_CALIB_OK ((uint32_t)0x000FACEu)
 
 /** APD — данные приложения */
 typedef struct
