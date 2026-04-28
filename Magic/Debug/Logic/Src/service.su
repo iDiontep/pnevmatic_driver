@@ -1,0 +1,4 @@
+../Logic/Src/service.c:32:13:phase_timed_out	16	static
+../Logic/Src/service.c:37:13:bounce_timed_out	16	static
+../Logic/Src/service.c:42:13:calibrate_fail	16	static
+../Logic/Src/service.c:49:6:service_calibrate_limits	40	static

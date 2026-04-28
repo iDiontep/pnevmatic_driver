@@ -26,6 +26,7 @@
 #include "app.h"
 #include "tb6560.h"
 #include "limits.h"
+#include "service.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -108,6 +109,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   tb6560_init(&htim2);
   limits_init();
+  service_calibrate_limits();
   /* USER CODE END 2 */
 
   /* Infinite loop */
