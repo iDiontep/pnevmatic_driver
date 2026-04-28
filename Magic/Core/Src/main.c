@@ -384,10 +384,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LIMIT_SW_MIN_Pin LIMIT_SW_MAX_Pin */
-  GPIO_InitStruct.Pin = LIMIT_SW_MIN_Pin | LIMIT_SW_MAX_Pin;
+  GPIO_InitStruct.Pin = LIMIT_SW_MIN_Pin|LIMIT_SW_MAX_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
