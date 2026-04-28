@@ -1,7 +1,7 @@
 /*
- * service.c — установка position_min / position_max по концевикам до основного цикла.
+ * service.c — установка settings.position_min / position_max по концевикам до основного цикла.
  *
- * Успех: position_min = 0, position_current = 0, position_max = ход в шагах до MAX.
+ * Успех: position_min = 0, data.current_position = 0, position_max = ход в шагах до MAX.
  * Ошибка (таймаут): стоп, двигатель off, app = dflt_app_params.
  */
 
@@ -18,9 +18,6 @@
 
 #ifndef SERVICE_CALIB_CHUNK
 #define SERVICE_CALIB_CHUNK 400U
-#endif
-#ifndef SERVICE_CALIB_HZ
-#define SERVICE_CALIB_HZ 800U
 #endif
 #ifndef SERVICE_CALIB_PHASE_MS
 #define SERVICE_CALIB_PHASE_MS 120000U
@@ -46,20 +43,40 @@ static void calibrate_fail(void)
   app = dflt_app_params;
 }
 
+/** Направление к логическому MIN (к физ. MIN при dir>=0, к физ. MAX при dir<0). */
+static void calib_set_direction_toward_logical_min(void)
+{
+  tb6560_set_direction_forward(app.settings.position_dir < 0);
+}
+
+/** Направление к логическому MAX. */
+static void calib_set_direction_toward_logical_max(void)
+{
+  tb6560_set_direction_forward(app.settings.position_dir >= 0);
+}
+
+/** Отъезд от логического MIN (в сторону логического MAX). */
+static void calib_set_direction_away_from_logical_min(void)
+{
+  calib_set_direction_toward_logical_max();
+}
+
 void service_calibrate_limits(void)
 {
   const uint32_t chunk = SERVICE_CALIB_CHUNK;
-  const uint32_t hz = SERVICE_CALIB_HZ;
+  uint32_t       hz    = app.settings.motor_speed;
+  if (hz == 0U)
+    hz = 1000U;
 
   tb6560_motor_enable(true);
 
   /* Отъезд от MIN, если при старте уже на концевике */
   limits_update();
-  if (limits_min_engaged())
+  if (limits_logical_min_engaged())
   {
-    tb6560_set_direction_forward(true);
+    calib_set_direction_away_from_logical_min();
     uint32_t tb = HAL_GetTick();
-    while (limits_min_engaged())
+    while (limits_logical_min_engaged())
     {
       limits_update();
       if (bounce_timed_out(tb))
@@ -71,7 +88,7 @@ void service_calibrate_limits(void)
       while (motor_data.motion != TB6560_MOTION_IDLE)
       {
         limits_update();
-        if (!limits_min_engaged())
+        if (!limits_logical_min_engaged())
         {
           tb6560_stop_steps();
           goto after_bounce;
@@ -88,14 +105,14 @@ void service_calibrate_limits(void)
     ;
   }
 
-  /* Фаза A: поиск MIN (REV) */
-  tb6560_set_direction_forward(false);
+  /* Фаза A: поиск логического MIN */
+  calib_set_direction_toward_logical_min();
   uint32_t ta = HAL_GetTick();
 
   for (;;)
   {
     limits_update();
-    if (limits_min_engaged())
+    if (limits_logical_min_engaged())
       break;
 
     if (phase_timed_out(ta))
@@ -108,7 +125,7 @@ void service_calibrate_limits(void)
     while (motor_data.motion != TB6560_MOTION_IDLE)
     {
       limits_update();
-      if (limits_min_engaged())
+      if (limits_logical_min_engaged())
       {
         tb6560_stop_steps();
         goto phase_a_done;
@@ -123,20 +140,20 @@ void service_calibrate_limits(void)
   }
 phase_a_done:
 
-  app.position_min = 0U;
-  app.position_current = 0U;
+  app.settings.position_min = 0U;
+  app.data.current_position = 0U;
 
-  /* Фаза B: MAX (FWD), накопление шагов */
-  tb6560_set_direction_forward(true);
-  uint32_t tb_phase = HAL_GetTick();
+  /* Фаза B: логический MAX, накопление шагов */
+  calib_set_direction_toward_logical_max();
+  uint32_t tb_phase   = HAL_GetTick();
   uint32_t total_steps = 0U;
 
   for (;;)
   {
     limits_update();
-    if (limits_max_engaged())
+    if (limits_logical_max_engaged())
     {
-      app.position_max = total_steps;
+      app.settings.position_max = total_steps;
       tb6560_stop_steps();
       tb6560_motor_enable(false);
       return;
@@ -152,12 +169,12 @@ phase_a_done:
     while (motor_data.motion != TB6560_MOTION_IDLE)
     {
       limits_update();
-      if (limits_max_engaged())
+      if (limits_logical_max_engaged())
       {
         uint32_t rem = motor_data.steps_remaining;
         tb6560_stop_steps();
         total_steps += chunk - rem;
-        app.position_max = total_steps;
+        app.settings.position_max = total_steps;
         tb6560_motor_enable(false);
         return;
       }

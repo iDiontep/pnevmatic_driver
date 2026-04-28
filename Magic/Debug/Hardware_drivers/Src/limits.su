@@ -1,7 +1,9 @@
-../Hardware_drivers/Src/limits.c:22:13:limits_raw_low	16	static
-../Hardware_drivers/Src/limits.c:27:13:limits_debounce_step	24	static
-../Hardware_drivers/Src/limits.c:41:13:limits_debounce_sync	24	static
-../Hardware_drivers/Src/limits.c:49:6:limits_init	8	static
-../Hardware_drivers/Src/limits.c:55:6:limits_update	8	static
-../Hardware_drivers/Src/limits.c:61:6:limits_min_engaged	4	static
-../Hardware_drivers/Src/limits.c:66:6:limits_max_engaged	4	static
+../Hardware_drivers/Src/limits.c:23:13:limits_raw_low	16	static
+../Hardware_drivers/Src/limits.c:28:13:limits_debounce_step	24	static
+../Hardware_drivers/Src/limits.c:42:13:limits_debounce_sync	24	static
+../Hardware_drivers/Src/limits.c:50:6:limits_init	8	static
+../Hardware_drivers/Src/limits.c:56:6:limits_update	8	static
+../Hardware_drivers/Src/limits.c:62:6:limits_min_engaged	4	static
+../Hardware_drivers/Src/limits.c:67:6:limits_max_engaged	4	static
+../Hardware_drivers/Src/limits.c:72:6:limits_logical_min_engaged	8	static
+../Hardware_drivers/Src/limits.c:79:6:limits_logical_max_engaged	8	static

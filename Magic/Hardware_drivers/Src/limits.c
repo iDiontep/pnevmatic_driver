@@ -3,6 +3,7 @@
  */
 
 #include "limits.h"
+#include "app.h"
 #include "main.h"
 
 #include "stm32f3xx_hal.h"
@@ -66,4 +67,18 @@ bool limits_min_engaged(void)
 bool limits_max_engaged(void)
 {
   return s_max.stable;
+}
+
+bool limits_logical_min_engaged(void)
+{
+  if (app.settings.position_dir < 0)
+    return limits_max_engaged();
+  return limits_min_engaged();
+}
+
+bool limits_logical_max_engaged(void)
+{
+  if (app.settings.position_dir < 0)
+    return limits_min_engaged();
+  return limits_max_engaged();
 }

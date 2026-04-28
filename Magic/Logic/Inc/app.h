@@ -13,19 +13,33 @@
 extern "C" {
 #endif
 
-/** Параметры приложения */
-typedef struct {
-  uint32_t minutes;
-  uint8_t  button;
+/** APS — настройки приложения */
+typedef struct
+{
   uint32_t position_min;
   uint32_t position_max;
-  uint32_t position_current;
+  int32_t  position_dir; /**< логический смысл лимитов: 1 или -1 */
+  uint32_t motor_speed; /**< Гц STEP; 0 недопустим в протоколе — подставить дефолт 1000 */
+} app_settings_t;
+
+/** APD — данные приложения */
+typedef struct
+{
+  uint32_t minutes;
+  uint8_t  button;
+  uint32_t current_position;
+} app_data_t;
+
+typedef struct
+{
+  app_settings_t settings;
+  app_data_t     data;
 } app_t;
 
 /** Глобальный экземпляр параметров приложения */
 extern app_t app;
 
-/** Параметры по умолчанию: все поля 0 */
+/** Параметры по умолчанию */
 extern const app_t dflt_app_params;
 
 /**

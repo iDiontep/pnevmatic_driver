@@ -7,17 +7,12 @@
  *  Обработка данных, полученных по USB CDC.
  *
  *  Протокол (согласованный контракт хост–прошивка):
- *  - Запросы: префикс EFGH, затем токены через пробел / , / =
- *  - Успех: для SET — строка «параметр значение» (см. ниже) или ответ GET
+ *  - Разбор только через cli_process после префикса EFGH (в любом регистре).
+ *  - Запросы: токены через пробел / , / =
+ *  - Успех: для SET — строка «параметр значение» (см. receiver.h) или ответ GET
  *  - Ошибка: HGFE Error - ...\r\n
  *
- *  Категория MOT (TB6560):
- *  - EFGH SET MOT EN 0|1
- *  - EFGH SET MOT DIR 0|1|REV|FWD  (0=REV, 1=FWD)
- *  - EFGH SET MOT RUN|HZ <hz>  (синонимы; hz=0 — стоп)
- *  - EFGH SET MOT STOP
- *  - EFGH SET MOT MOVE <steps> <hz>  — неблокирующий ответ MOT MOVE <steps> <hz>
- *  - EFGH GET MOT STAT|ALL → та же строка MOT STAT … (ALL = синоним STAT)
+ *  Категории: APS (настройки), APD (данные), MOT (TB6560) — см. receiver.h.
  *
  *  При новой команде RUN / MOVE / STOP текущее движение отменяется (нет HGFE busy).
  */
@@ -134,28 +129,57 @@ static void cli_process(char *buffer)
   const char *cmd = tokens[0]; /* GET / SET */
   const char *cat = tokens[1];
 
-  /* ---------------- APS ---------------- */
+  /* ---------------- APS (настройки) ---------------- */
   if (strcmp(cat, "APS") == 0)
   {
     if (strcmp(cmd, "SET") == 0)
     {
       if (argc >= 3 && strcmp(tokens[2], "DFLT") == 0)
       {
-        app = dflt_app_params;
-        receiver_replyf("APS DFLT %lu %u %lu %lu %lu\r\n",
-                        (unsigned long)app.minutes,
-                        (unsigned int)app.button,
-                        (unsigned long)app.position_min,
-                        (unsigned long)app.position_max,
-                        (unsigned long)app.position_current);
+        app.settings = dflt_app_params.settings;
+        receiver_replyf("APS DFLT %lu %lu %ld %lu\r\n",
+                        (unsigned long)app.settings.position_min,
+                        (unsigned long)app.settings.position_max,
+                        (long)app.settings.position_dir,
+                        (unsigned long)app.settings.motor_speed);
         return;
       }
 
       if (argc >= 4 && strcmp(tokens[2], "POSITION_MIN") == 0)
       {
         unsigned long value = strtoul(tokens[3], NULL, 10);
-        app.position_min = (uint32_t)value;
-        receiver_replyf("APS POSITION_MIN %lu\r\n", (unsigned long)app.position_min);
+        app.settings.position_min = (uint32_t)value;
+        receiver_replyf("APS POSITION_MIN %lu\r\n", (unsigned long)app.settings.position_min);
+        return;
+      }
+
+      if (argc >= 4 && strcmp(tokens[2], "POSITION_MAX") == 0)
+      {
+        unsigned long value = strtoul(tokens[3], NULL, 10);
+        app.settings.position_max = (uint32_t)value;
+        receiver_replyf("APS POSITION_MAX %lu\r\n", (unsigned long)app.settings.position_max);
+        return;
+      }
+
+      if (argc >= 4 && strcmp(tokens[2], "POSITION_DIR") == 0)
+      {
+        long v = strtol(tokens[3], NULL, 10);
+        if (v != 1L && v != -1L)
+        {
+          const char error_response[] = "HGFE Error - POSITION_DIR must be 1 or -1\r\n";
+          CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
+          return;
+        }
+        app.settings.position_dir = (int32_t)v;
+        receiver_replyf("APS POSITION_DIR %ld\r\n", (long)app.settings.position_dir);
+        return;
+      }
+
+      if (argc >= 4 && strcmp(tokens[2], "MOTOR_SPEED") == 0)
+      {
+        unsigned long value = strtoul(tokens[3], NULL, 10);
+        app.settings.motor_speed = (uint32_t)value;
+        receiver_replyf("APS MOTOR_SPEED %lu\r\n", (unsigned long)app.settings.motor_speed);
         return;
       }
 
@@ -168,13 +192,12 @@ static void cli_process(char *buffer)
     {
       if (argc >= 3 && strcmp(tokens[2], "ALL") == 0)
       {
-        char resp[80];
-        int n = snprintf(resp, sizeof(resp), "APS ALL %lu %u %lu %lu %lu\r\n",
-                         (unsigned long)app.minutes,
-                         (unsigned int)app.button,
-                         (unsigned long)app.position_min,
-                         (unsigned long)app.position_max,
-                         (unsigned long)app.position_current);
+        char resp[96];
+        int n = snprintf(resp, sizeof(resp), "APS ALL %lu %lu %ld %lu\r\n",
+                         (unsigned long)app.settings.position_min,
+                         (unsigned long)app.settings.position_max,
+                         (long)app.settings.position_dir,
+                         (unsigned long)app.settings.motor_speed);
         if (n > 0)
           CDC_Transmit_FS((uint8_t *)resp, (uint16_t)n);
         return;
@@ -182,10 +205,25 @@ static void cli_process(char *buffer)
 
       if (argc >= 3 && strcmp(tokens[2], "POSITION_MIN") == 0)
       {
-        char resp[64];
-        int n = snprintf(resp, sizeof(resp), "APS POSITION_MIN %lu\r\n", (unsigned long)app.position_min);
-        if (n > 0)
-          CDC_Transmit_FS((uint8_t *)resp, (uint16_t)n);
+        receiver_replyf("APS POSITION_MIN %lu\r\n", (unsigned long)app.settings.position_min);
+        return;
+      }
+
+      if (argc >= 3 && strcmp(tokens[2], "POSITION_MAX") == 0)
+      {
+        receiver_replyf("APS POSITION_MAX %lu\r\n", (unsigned long)app.settings.position_max);
+        return;
+      }
+
+      if (argc >= 3 && strcmp(tokens[2], "POSITION_DIR") == 0)
+      {
+        receiver_replyf("APS POSITION_DIR %ld\r\n", (long)app.settings.position_dir);
+        return;
+      }
+
+      if (argc >= 3 && strcmp(tokens[2], "MOTOR_SPEED") == 0)
+      {
+        receiver_replyf("APS MOTOR_SPEED %lu\r\n", (unsigned long)app.settings.motor_speed);
         return;
       }
 
@@ -195,6 +233,92 @@ static void cli_process(char *buffer)
     }
 
     const char error_response[] = "HGFE Error - Unknown APS command\r\n";
+    CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
+    return;
+  }
+
+  /* ---------------- APD (данные) ---------------- */
+  if (strcmp(cat, "APD") == 0)
+  {
+    if (strcmp(cmd, "SET") == 0)
+    {
+      if (argc >= 3 && strcmp(tokens[2], "DFLT") == 0)
+      {
+        app.data = dflt_app_params.data;
+        receiver_replyf("APD DFLT %lu %u %lu\r\n",
+                        (unsigned long)app.data.minutes,
+                        (unsigned int)app.data.button,
+                        (unsigned long)app.data.current_position);
+        return;
+      }
+
+      if (argc >= 4 && strcmp(tokens[2], "MINUTES") == 0)
+      {
+        unsigned long value = strtoul(tokens[3], NULL, 10);
+        app.data.minutes = (uint32_t)value;
+        receiver_replyf("APD MINUTES %lu\r\n", (unsigned long)app.data.minutes);
+        return;
+      }
+
+      if (argc >= 4 && strcmp(tokens[2], "BUTTON") == 0)
+      {
+        unsigned long value = strtoul(tokens[3], NULL, 10);
+        app.data.button = (uint8_t)value;
+        receiver_replyf("APD BUTTON %u\r\n", (unsigned int)app.data.button);
+        return;
+      }
+
+      if (argc >= 4 && strcmp(tokens[2], "CURRENT_POSITION") == 0)
+      {
+        unsigned long value = strtoul(tokens[3], NULL, 10);
+        app.data.current_position = (uint32_t)value;
+        receiver_replyf("APD CURRENT_POSITION %lu\r\n", (unsigned long)app.data.current_position);
+        return;
+      }
+
+      const char error_response[] = "HGFE Error - Invalid SET APD command\r\n";
+      CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
+      return;
+    }
+
+    if (strcmp(cmd, "GET") == 0)
+    {
+      if (argc >= 3 && strcmp(tokens[2], "ALL") == 0)
+      {
+        char resp[96];
+        int n = snprintf(resp, sizeof(resp), "APD ALL %lu %u %lu\r\n",
+                         (unsigned long)app.data.minutes,
+                         (unsigned int)app.data.button,
+                         (unsigned long)app.data.current_position);
+        if (n > 0)
+          CDC_Transmit_FS((uint8_t *)resp, (uint16_t)n);
+        return;
+      }
+
+      if (argc >= 3 && strcmp(tokens[2], "MINUTES") == 0)
+      {
+        receiver_replyf("APD MINUTES %lu\r\n", (unsigned long)app.data.minutes);
+        return;
+      }
+
+      if (argc >= 3 && strcmp(tokens[2], "BUTTON") == 0)
+      {
+        receiver_replyf("APD BUTTON %u\r\n", (unsigned int)app.data.button);
+        return;
+      }
+
+      if (argc >= 3 && strcmp(tokens[2], "CURRENT_POSITION") == 0)
+      {
+        receiver_replyf("APD CURRENT_POSITION %lu\r\n", (unsigned long)app.data.current_position);
+        return;
+      }
+
+      const char error_response[] = "HGFE Error - Invalid GET APD command\r\n";
+      CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
+      return;
+    }
+
+    const char error_response[] = "HGFE Error - Unknown APD command\r\n";
     CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
     return;
   }
@@ -329,63 +453,6 @@ static void receiver_line_flush(void)
   {
     cli_process(cmd);
     return;
-  }
-
-  /* SET APS DFLT */
-  if (strncmp(cmd, "SET APS DFLT", 12) == 0)
-  {
-    app = dflt_app_params;
-    receiver_replyf("APS DFLT %lu %u %lu %lu %lu\r\n",
-                    (unsigned long)app.minutes,
-                    (unsigned int)app.button,
-                    (unsigned long)app.position_min,
-                    (unsigned long)app.position_max,
-                    (unsigned long)app.position_current);
-    return;
-  }
-
-  if (strncmp(cmd, "SET APS POSITION_MIN ", 22) == 0)
-  {
-    char *p = cmd + 22;
-    unsigned long value = strtoul(p, NULL, 10);
-    app.position_min = (uint32_t)value;
-    receiver_replyf("APS POSITION_MIN %lu\r\n", (unsigned long)app.position_min);
-    return;
-  }
-
-  if (strncmp(cmd, "GET APS ALL", 11) == 0)
-  {
-    char resp[80];
-    int n = snprintf(resp, sizeof(resp), "APS ALL %lu %u %lu %lu %lu\r\n",
-                     (unsigned long)app.minutes,
-                     (unsigned int)app.button,
-                     (unsigned long)app.position_min,
-                     (unsigned long)app.position_max,
-                     (unsigned long)app.position_current);
-    if (n > 0)
-      CDC_Transmit_FS((uint8_t *)resp, (uint16_t)n);
-    return;
-  }
-
-  if (strncmp(cmd, "GET APS POSITION_MIN", 21) == 0)
-  {
-    char resp[64];
-    int n = snprintf(resp, sizeof(resp), "APS POSITION_MIN %lu\r\n", (unsigned long)app.position_min);
-    if (n > 0)
-      CDC_Transmit_FS((uint8_t *)resp, (uint16_t)n);
-    return;
-  }
-
-  /* MOT: короткая строка → тот же разбор, что и для EFGH … */
-  if (strncmp(cmd, "SET MOT ", 8) == 0 || strncmp(cmd, "GET MOT ", 8) == 0)
-  {
-    char wrapped[RECEIVER_CMD_BUF_SZ + 8];
-    int n = snprintf(wrapped, sizeof(wrapped), "EFGH %s", cmd);
-    if (n > 0 && n < (int)sizeof(wrapped))
-    {
-      cli_process(wrapped);
-      return;
-    }
   }
 
   CDC_Transmit_FS((uint8_t *)cmd, (uint16_t)strlen(cmd));

@@ -1,5 +1,5 @@
 Hardware_drivers/Src/limits.o: ../Hardware_drivers/Src/limits.c \
- ../Hardware_drivers/Inc/limits.h ../Core/Inc/main.h \
+ ../Hardware_drivers/Inc/limits.h ../Logic/Inc/app.h ../Core/Inc/main.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h \
  ../Core/Inc/stm32f3xx_hal_conf.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_rcc.h \
@@ -36,6 +36,7 @@ Hardware_drivers/Src/limits.o: ../Hardware_drivers/Src/limits.c \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_uart.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_uart_ex.h
 ../Hardware_drivers/Inc/limits.h:
+../Logic/Inc/app.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h:
 ../Core/Inc/stm32f3xx_hal_conf.h:
