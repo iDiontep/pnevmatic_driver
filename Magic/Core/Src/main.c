@@ -24,8 +24,10 @@
 /* USER CODE BEGIN Includes */
 #include "receiver.h"
 #include "app.h"
+#include "eeprom.h"
 #include "tb6560.h"
 #include "limits.h"
+#include "service.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -79,7 +81,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  app = dflt_app_params;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -106,8 +108,15 @@ int main(void)
   MX_CRC_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  {
+    app_settings_t s;
+    if (eeprom_try_load(&s))
+      app.settings = s;
+  }
   tb6560_init(&htim2);
   limits_init();
+  if (app.settings.status != APS_STATUS_CALIB_OK)
+    service_calibrate_limits();
   /* USER CODE END 2 */
 
   /* Infinite loop */

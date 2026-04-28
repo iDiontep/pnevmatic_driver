@@ -1,0 +1,7 @@
+../Logic/Src/service.c:30:13:phase_timed_out	1
+../Logic/Src/service.c:35:13:bounce_timed_out	1
+../Logic/Src/service.c:40:13:calibrate_fail	1
+../Logic/Src/service.c:48:13:calib_set_direction_toward_logical_min	1
+../Logic/Src/service.c:54:13:calib_set_direction_toward_logical_max	1
+../Logic/Src/service.c:60:13:calib_set_direction_away_from_logical_min	1
+../Logic/Src/service.c:65:6:service_calibrate_limits	18

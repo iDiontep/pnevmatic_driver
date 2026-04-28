@@ -13,19 +13,39 @@
 extern "C" {
 #endif
 
-/** Параметры приложения */
-typedef struct {
+/** APS — настройки приложения */
+typedef struct
+{
+  uint32_t status;      /**< APS_STATUS_DFLT / APS_STATUS_CALIB_OK см. ниже */
+  uint32_t position_min;
+  uint32_t position_max;
+  int32_t  position_dir; /**< логический смысл лимитов: 1 или -1 */
+  uint32_t motor_speed; /**< Гц STEP; 0 недопустим в протоколе — подставить дефолт 1000 */
+} app_settings_t;
+
+/** DFLT и состояние «ещё не откалибровано» по умолчанию */
+#define APS_STATUS_DFLT ((uint32_t)0x000B00B5u)
+/** После успешной калибровки концевиков */
+#define APS_STATUS_CALIB_OK ((uint32_t)0x000FACEu)
+
+/** APD — данные приложения */
+typedef struct
+{
   uint32_t minutes;
   uint8_t  button;
-  uint32_t param1;
-  uint32_t param2;
-  uint32_t param3;
+  uint32_t current_position;
+} app_data_t;
+
+typedef struct
+{
+  app_settings_t settings;
+  app_data_t     data;
 } app_t;
 
 /** Глобальный экземпляр параметров приложения */
 extern app_t app;
 
-/** Параметры по умолчанию: minutes=0, button=0, param1=0, param2=0, param3=0 */
+/** Параметры по умолчанию */
 extern const app_t dflt_app_params;
 
 /**

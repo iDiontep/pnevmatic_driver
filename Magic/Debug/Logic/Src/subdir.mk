@@ -5,13 +5,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Logic/Src/app.c 
+../Logic/Src/app.c \
+../Logic/Src/service.c 
 
 OBJS += \
-./Logic/Src/app.o 
+./Logic/Src/app.o \
+./Logic/Src/service.o 
 
 C_DEPS += \
-./Logic/Src/app.d 
+./Logic/Src/app.d \
+./Logic/Src/service.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -21,7 +24,7 @@ Logic/Src/%.o Logic/Src/%.su Logic/Src/%.cyclo: ../Logic/Src/%.c Logic/Src/subdi
 clean: clean-Logic-2f-Src
 
 clean-Logic-2f-Src:
-	-$(RM) ./Logic/Src/app.cyclo ./Logic/Src/app.d ./Logic/Src/app.o ./Logic/Src/app.su
+	-$(RM) ./Logic/Src/app.cyclo ./Logic/Src/app.d ./Logic/Src/app.o ./Logic/Src/app.su ./Logic/Src/service.cyclo ./Logic/Src/service.d ./Logic/Src/service.o ./Logic/Src/service.su
 
 .PHONY: clean-Logic-2f-Src
 
