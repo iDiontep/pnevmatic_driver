@@ -69,7 +69,7 @@ void service_calibrate_limits(void)
   if (hz == 0U)
     hz = 1000U;
 
-  tb6560_motor_enable(true);
+  tb6560_motor_enable(false);
 
   /* Отъезд от MIN, если при старте уже на концевике */
   limits_update();
