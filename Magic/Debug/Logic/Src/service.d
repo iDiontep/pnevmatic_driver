@@ -1,7 +1,7 @@
 Logic/Src/service.o: ../Logic/Src/service.c ../Logic/Inc/service.h \
  ../Logic/Inc/app.h ../Hardware_drivers/Inc/limits.h \
- ../Hardware_drivers/Inc/tb6560.h ../Core/Inc/main.h \
- ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h \
+ ../Hardware_drivers/Inc/eeprom.h ../Hardware_drivers/Inc/tb6560.h \
+ ../Core/Inc/main.h ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h \
  ../Core/Inc/stm32f3xx_hal_conf.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_rcc.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_def.h \
@@ -39,6 +39,7 @@ Logic/Src/service.o: ../Logic/Src/service.c ../Logic/Inc/service.h \
 ../Logic/Inc/service.h:
 ../Logic/Inc/app.h:
 ../Hardware_drivers/Inc/limits.h:
+../Hardware_drivers/Inc/eeprom.h:
 ../Hardware_drivers/Inc/tb6560.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h:

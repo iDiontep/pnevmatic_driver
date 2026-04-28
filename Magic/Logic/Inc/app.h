@@ -16,6 +16,7 @@ extern "C" {
 /** APS — настройки приложения */
 typedef struct
 {
+  uint32_t status;      /**< флаги состояния APS */
   uint32_t position_min;
   uint32_t position_max;
   int32_t  position_dir; /**< логический смысл лимитов: 1 или -1 */

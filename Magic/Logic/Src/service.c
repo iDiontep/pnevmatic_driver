@@ -9,6 +9,7 @@
 
 #include "app.h"
 #include "limits.h"
+#include "eeprom.h"
 #include "tb6560.h"
 
 #include "stm32f3xx_hal.h"
@@ -156,6 +157,7 @@ phase_a_done:
       app.settings.position_max = total_steps;
       tb6560_stop_steps();
       tb6560_motor_enable(false);
+      (void)eeprom_save(&app.settings);
       return;
     }
 
@@ -176,6 +178,7 @@ phase_a_done:
         total_steps += chunk - rem;
         app.settings.position_max = total_steps;
         tb6560_motor_enable(false);
+        (void)eeprom_save(&app.settings);
         return;
       }
       if ((HAL_GetTick() - tb_phase) >= SERVICE_CALIB_PHASE_MS)

@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "receiver.h"
 #include "app.h"
+#include "eeprom.h"
 #include "tb6560.h"
 #include "limits.h"
 #include "service.h"
@@ -107,6 +108,12 @@ int main(void)
   MX_CRC_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  app = dflt_app_params;
+  {
+    app_settings_t s;
+    if (eeprom_try_load(&s))
+      app.settings = s;
+  }
   tb6560_init(&htim2);
   limits_init();
   service_calibrate_limits();

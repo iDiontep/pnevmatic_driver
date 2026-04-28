@@ -19,12 +19,12 @@
  *
  *  === Категория APS (настройки, app.settings) ===
  *  EFGH SET APS DFLT
- *      — сброс настроек к дефолту; ответ: APS DFLT <position_min> <position_max> <position_dir> <motor_speed> + CRLF
+ *      — сброс настроек к дефолту; ответ: APS DFLT <status> <position_min> <position_max> <position_dir> <motor_speed> + CRLF
  *  EFGH GET APS ALL
- *      — ответ: APS ALL с теми же четырьмя полями + CRLF
- *  EFGH SET APS POSITION_MIN|POSITION_MAX|MOTOR_SPEED <число>
+ *      — ответ: APS ALL с теми же пятью полями (порядок: status первым) + CRLF
+ *  EFGH SET APS POSITION_MIN|POSITION_MAX|MOTOR_SPEED|STATUS <число>
  *  EFGH SET APS POSITION_DIR 1|-1  (только 1 или -1; иначе HGFE Error)
- *  EFGH GET APS POSITION_MIN|POSITION_MAX|POSITION_DIR|MOTOR_SPEED
+ *  EFGH GET APS POSITION_MIN|POSITION_MAX|POSITION_DIR|MOTOR_SPEED|STATUS
  *
  *  === Категория APD (данные, app.data) ===
  *  EFGH SET APD DFLT

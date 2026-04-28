@@ -137,7 +137,8 @@ static void cli_process(char *buffer)
       if (argc >= 3 && strcmp(tokens[2], "DFLT") == 0)
       {
         app.settings = dflt_app_params.settings;
-        receiver_replyf("APS DFLT %lu %lu %ld %lu\r\n",
+        receiver_replyf("APS DFLT %lu %lu %lu %ld %lu\r\n",
+                        (unsigned long)app.settings.status,
                         (unsigned long)app.settings.position_min,
                         (unsigned long)app.settings.position_max,
                         (long)app.settings.position_dir,
@@ -183,6 +184,14 @@ static void cli_process(char *buffer)
         return;
       }
 
+      if (argc >= 4 && strcmp(tokens[2], "STATUS") == 0)
+      {
+        unsigned long value = strtoul(tokens[3], NULL, 0);
+        app.settings.status = (uint32_t)value;
+        receiver_replyf("APS STATUS %lu\r\n", (unsigned long)app.settings.status);
+        return;
+      }
+
       const char error_response[] = "HGFE Error - Invalid SET APS command\r\n";
       CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
       return;
@@ -192,8 +201,9 @@ static void cli_process(char *buffer)
     {
       if (argc >= 3 && strcmp(tokens[2], "ALL") == 0)
       {
-        char resp[96];
-        int n = snprintf(resp, sizeof(resp), "APS ALL %lu %lu %ld %lu\r\n",
+        char resp[120];
+        int n = snprintf(resp, sizeof(resp), "APS ALL %lu %lu %lu %ld %lu\r\n",
+                         (unsigned long)app.settings.status,
                          (unsigned long)app.settings.position_min,
                          (unsigned long)app.settings.position_max,
                          (long)app.settings.position_dir,
@@ -224,6 +234,12 @@ static void cli_process(char *buffer)
       if (argc >= 3 && strcmp(tokens[2], "MOTOR_SPEED") == 0)
       {
         receiver_replyf("APS MOTOR_SPEED %lu\r\n", (unsigned long)app.settings.motor_speed);
+        return;
+      }
+
+      if (argc >= 3 && strcmp(tokens[2], "STATUS") == 0)
+      {
+        receiver_replyf("APS STATUS %lu\r\n", (unsigned long)app.settings.status);
         return;
       }
 
