@@ -145,17 +145,17 @@ static void cli_process(char *buffer)
         receiver_replyf("APS DFLT %lu %u %lu %lu %lu\r\n",
                         (unsigned long)app.minutes,
                         (unsigned int)app.button,
-                        (unsigned long)app.param1,
-                        (unsigned long)app.param2,
-                        (unsigned long)app.param3);
+                        (unsigned long)app.position_min,
+                        (unsigned long)app.position_max,
+                        (unsigned long)app.position_current);
         return;
       }
 
-      if (argc >= 4 && strcmp(tokens[2], "PARAM1") == 0)
+      if (argc >= 4 && strcmp(tokens[2], "POSITION_MIN") == 0)
       {
         unsigned long value = strtoul(tokens[3], NULL, 10);
-        app.param1 = (uint32_t)value;
-        receiver_replyf("APS PARAM1 %lu\r\n", (unsigned long)app.param1);
+        app.position_min = (uint32_t)value;
+        receiver_replyf("APS POSITION_MIN %lu\r\n", (unsigned long)app.position_min);
         return;
       }
 
@@ -172,18 +172,18 @@ static void cli_process(char *buffer)
         int n = snprintf(resp, sizeof(resp), "APS ALL %lu %u %lu %lu %lu\r\n",
                          (unsigned long)app.minutes,
                          (unsigned int)app.button,
-                         (unsigned long)app.param1,
-                         (unsigned long)app.param2,
-                         (unsigned long)app.param3);
+                         (unsigned long)app.position_min,
+                         (unsigned long)app.position_max,
+                         (unsigned long)app.position_current);
         if (n > 0)
           CDC_Transmit_FS((uint8_t *)resp, (uint16_t)n);
         return;
       }
 
-      if (argc >= 3 && strcmp(tokens[2], "PARAM") == 0)
+      if (argc >= 3 && strcmp(tokens[2], "POSITION_MIN") == 0)
       {
         char resp[64];
-        int n = snprintf(resp, sizeof(resp), "APS PARAM1 %lu\r\n", (unsigned long)app.param1);
+        int n = snprintf(resp, sizeof(resp), "APS POSITION_MIN %lu\r\n", (unsigned long)app.position_min);
         if (n > 0)
           CDC_Transmit_FS((uint8_t *)resp, (uint16_t)n);
         return;
@@ -338,18 +338,18 @@ static void receiver_line_flush(void)
     receiver_replyf("APS DFLT %lu %u %lu %lu %lu\r\n",
                     (unsigned long)app.minutes,
                     (unsigned int)app.button,
-                    (unsigned long)app.param1,
-                    (unsigned long)app.param2,
-                    (unsigned long)app.param3);
+                    (unsigned long)app.position_min,
+                    (unsigned long)app.position_max,
+                    (unsigned long)app.position_current);
     return;
   }
 
-  if (strncmp(cmd, "SET APS PARAM1 ", 15) == 0)
+  if (strncmp(cmd, "SET APS POSITION_MIN ", 22) == 0)
   {
-    char *p = cmd + 15;
+    char *p = cmd + 22;
     unsigned long value = strtoul(p, NULL, 10);
-    app.param1 = (uint32_t)value;
-    receiver_replyf("APS PARAM1 %lu\r\n", (unsigned long)app.param1);
+    app.position_min = (uint32_t)value;
+    receiver_replyf("APS POSITION_MIN %lu\r\n", (unsigned long)app.position_min);
     return;
   }
 
@@ -359,18 +359,18 @@ static void receiver_line_flush(void)
     int n = snprintf(resp, sizeof(resp), "APS ALL %lu %u %lu %lu %lu\r\n",
                      (unsigned long)app.minutes,
                      (unsigned int)app.button,
-                     (unsigned long)app.param1,
-                     (unsigned long)app.param2,
-                     (unsigned long)app.param3);
+                     (unsigned long)app.position_min,
+                     (unsigned long)app.position_max,
+                     (unsigned long)app.position_current);
     if (n > 0)
       CDC_Transmit_FS((uint8_t *)resp, (uint16_t)n);
     return;
   }
 
-  if (strncmp(cmd, "GET APS PARAM", 13) == 0)
+  if (strncmp(cmd, "GET APS POSITION_MIN", 21) == 0)
   {
     char resp[64];
-    int n = snprintf(resp, sizeof(resp), "APS PARAM1 %lu\r\n", (unsigned long)app.param1);
+    int n = snprintf(resp, sizeof(resp), "APS POSITION_MIN %lu\r\n", (unsigned long)app.position_min);
     if (n > 0)
       CDC_Transmit_FS((uint8_t *)resp, (uint16_t)n);
     return;

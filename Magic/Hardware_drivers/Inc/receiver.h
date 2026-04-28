@@ -19,16 +19,16 @@
  *
  *  === Категория APS (параметры приложения app_t) ===
  *  Команды с префиксом EFGH:
- *    EFGH SET APS DFLT              — ответ: APS DFLT <minutes> <button> <param1> <param2> <param3> + CRLF
- *    EFGH SET APS PARAM1 <число>  — ответ: APS PARAM1 <param1> + CRLF
- *    EFGH GET APS ALL             — ответ: APS ALL <minutes> <button> <param1> <param2> <param3> + CRLF
- *    EFGH GET APS PARAM           — ответ: APS PARAM1 <param1> + CRLF
+ *    EFGH SET APS DFLT              — ответ: APS DFLT <minutes> <button> <position_min> <position_max> <position_current> + CRLF
+ *    EFGH SET APS POSITION_MIN <число> — ответ: APS POSITION_MIN <position_min> + CRLF
+ *    EFGH GET APS ALL             — ответ: APS ALL <minutes> <button> <position_min> <position_max> <position_current> + CRLF
+ *    EFGH GET APS POSITION_MIN    — ответ: APS POSITION_MIN <position_min> + CRLF
  *
  *  Устаревший ввод без префикса EFGH (короткие строки, как раньше):
  *    SET APS DFLT
- *    SET APS PARAM1 <число>
+ *    SET APS POSITION_MIN <число>
  *    GET APS ALL
- *    GET APS PARAM
+ *    GET APS POSITION_MIN
  *  MOT без префикса (те же подкоманды, что после EFGH MOT):
  *    SET MOT EN 0|1
  *    SET MOT DIR 0|1|REV|FWD

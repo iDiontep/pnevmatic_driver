@@ -17,15 +17,15 @@ extern "C" {
 typedef struct {
   uint32_t minutes;
   uint8_t  button;
-  uint32_t param1;
-  uint32_t param2;
-  uint32_t param3;
+  uint32_t position_min;
+  uint32_t position_max;
+  uint32_t position_current;
 } app_t;
 
 /** Глобальный экземпляр параметров приложения */
 extern app_t app;
 
-/** Параметры по умолчанию: minutes=0, button=0, param1=0, param2=0, param3=0 */
+/** Параметры по умолчанию: все поля 0 */
 extern const app_t dflt_app_params;
 
 /**
