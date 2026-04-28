@@ -14,7 +14,29 @@ motor_t motor_data = {
     .motion = TB6560_MOTION_IDLE,
     .step_hz = 0U,
     .steps_remaining = 0U,
+    .move_steps_planned = 0U,
+    .pending_executed_steps = 0U,
+    .pending_dir_snap = false,
 };
+
+bool tb6560_take_pending_move(uint32_t *steps_out, bool *dir_forward_out)
+{
+  uint32_t v;
+  bool     d;
+  __disable_irq();
+  v                                 = motor_data.pending_executed_steps;
+  d                                 = motor_data.pending_dir_snap;
+  motor_data.pending_executed_steps = 0U;
+  motor_data.pending_dir_snap       = false;
+  __enable_irq();
+  if (v == 0U)
+    return false;
+  if (steps_out != NULL)
+    *steps_out = v;
+  if (dir_forward_out != NULL)
+    *dir_forward_out = d;
+  return true;
+}
 
 static uint32_t tim2_cntclk_hz(void)
 {
@@ -74,9 +96,10 @@ void tb6560_init(TIM_HandleTypeDef *htim_step)
   motor_data.direction_forward = true;
   motor_data.motion = TB6560_MOTION_IDLE;
   motor_data.step_hz = 0U;
-  motor_data.steps_remaining = 0U;
-
-  tb6560_motor_enable(false);
+  motor_data.steps_remaining      = 0U;
+  motor_data.move_steps_planned       = 0U;
+  motor_data.pending_executed_steps   = 0U;
+  motor_data.pending_dir_snap         = false;
   tb6560_set_direction_forward(true);
   tb6560_stop_steps();
 }
@@ -109,6 +132,13 @@ void tb6560_stop_steps(void)
   HAL_TIM_PWM_Stop(s_htim, TIM_CHANNEL_1);
   __HAL_TIM_SET_COMPARE(s_htim, TIM_CHANNEL_1, 0);
 
+  uint32_t rem_done = motor_data.steps_remaining;
+  if (motor_data.motion == TB6560_MOTION_MOVE && motor_data.move_steps_planned > 0U)
+  {
+    motor_data.pending_executed_steps = motor_data.move_steps_planned - rem_done;
+    motor_data.pending_dir_snap       = motor_data.direction_forward;
+  }
+
   motor_data.steps_remaining = 0;
   motor_data.motion = TB6560_MOTION_IDLE;
   motor_data.step_hz = 0U;
@@ -140,7 +170,9 @@ static void move_steps_begin(uint32_t steps, uint32_t step_hz)
   motor_data.steps_remaining = steps;
   motor_data.motion = TB6560_MOTION_MOVE;
   motor_data.step_hz = step_hz;
-
+  motor_data.move_steps_planned       = steps;
+  motor_data.pending_executed_steps   = 0U;
+  motor_data.pending_dir_snap         = false;
   __HAL_TIM_CLEAR_FLAG(s_htim, TIM_SR_UIF);
   __HAL_TIM_ENABLE_IT(s_htim, TIM_IT_UPDATE);
   HAL_TIM_PWM_Start(s_htim, TIM_CHANNEL_1);
@@ -176,6 +208,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
     HAL_TIM_PWM_Stop(s_htim, TIM_CHANNEL_1);
     __HAL_TIM_DISABLE_IT(s_htim, TIM_IT_UPDATE);
+    motor_data.pending_executed_steps = motor_data.move_steps_planned;
+    motor_data.pending_dir_snap       = motor_data.direction_forward;
     motor_data.motion = TB6560_MOTION_IDLE;
     motor_data.step_hz = 0U;
   }

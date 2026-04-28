@@ -50,13 +50,22 @@ typedef struct motor
 {
   bool motor_enabled;
   bool direction_forward;
-  tb6560_motion_t motion;
+  volatile tb6560_motion_t motion;
   uint32_t step_hz;
   volatile uint32_t steps_remaining;
+  /** Задано при старте MOVE (диспетчеризация позиции). */
+  volatile uint32_t move_steps_planned;
+  /** Шаги, отданные при последнем выходе из MOVE (ISR или stop_steps); обнуляется take. */
+  volatile uint32_t pending_executed_steps;
+  /** Направление DIR на момент записи pending_executed_steps (для current_position). */
+  volatile bool pending_dir_snap;
 } motor_t;
 
 /** Текущее состояние мотора; обновляется драйвером TB6560 и при MOT-командах по USB. */
 extern motor_t motor_data;
+
+/** Считывает и обнуляет последний завершённый MOVE; false если шагов не было. */
+bool tb6560_take_pending_move(uint32_t *steps_out, bool *dir_forward_out);
 
 /** Копия motor_data в *out (удобно для согласованного снимка всех полей). */
 void tb6560_get_status(motor_t *out);

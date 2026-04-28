@@ -115,7 +115,7 @@ int main(void)
   }
   tb6560_init(&htim2);
   limits_init();
-  if (app.settings.status != APS_STATUS_CALIB_OK)
+  if (app.settings.status)
     service_calibrate_limits();
   /* USER CODE END 2 */
 

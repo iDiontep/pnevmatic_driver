@@ -464,6 +464,8 @@ static void cli_process(char *buffer)
         else if (limits_logical_max_engaged())
           app.data.current_position = pos_max;
 
+        (void)tb6560_take_pending_move(NULL, NULL);
+
         receiver_replyf("MOT RUN %lu\r\n", (unsigned long)app.data.current_position);
         return;
       }

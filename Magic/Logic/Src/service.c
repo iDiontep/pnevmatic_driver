@@ -1,7 +1,7 @@
 /*
  * service.c — установка settings.position_min / position_max по концевикам до основного цикла.
  *
- * Успех: position_min = 0, data.current_position = 0, position_max = ход в шагах до MAX.
+ * Успех: position_min = 0, position_max = ход в шагах, current_position = position_max (стык с MAX).
  * Ошибка (таймаут): стоп, двигатель off, app = dflt_app_params.
  */
 
@@ -40,6 +40,7 @@ static bool bounce_timed_out(uint32_t t_bounce_start)
 static void calibrate_fail(void)
 {
   tb6560_stop_steps();
+  (void)tb6560_take_pending_move(NULL, NULL);
   tb6560_motor_enable(false);
   app = dflt_app_params;
 }
@@ -141,6 +142,8 @@ void service_calibrate_limits(void)
   }
 phase_a_done:
 
+  (void)tb6560_take_pending_move(NULL, NULL);
+
   app.settings.position_min = 0U;
   app.data.current_position = 0U;
 
@@ -155,7 +158,9 @@ phase_a_done:
     if (limits_logical_max_engaged())
     {
       app.settings.position_max = total_steps;
+      app.data.current_position    = total_steps;
       tb6560_stop_steps();
+      (void)tb6560_take_pending_move(NULL, NULL);
       tb6560_motor_enable(false);
       app.settings.status = APS_STATUS_CALIB_OK;
       (void)eeprom_save(&app.settings);
@@ -178,8 +183,10 @@ phase_a_done:
         tb6560_stop_steps();
         total_steps += chunk - rem;
         app.settings.position_max = total_steps;
+        app.data.current_position    = total_steps;
         tb6560_motor_enable(false);
         app.settings.status = APS_STATUS_CALIB_OK;
+        (void)tb6560_take_pending_move(NULL, NULL);
         (void)eeprom_save(&app.settings);
         return;
       }

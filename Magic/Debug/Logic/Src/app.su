@@ -1,1 +1,2 @@
-../Logic/Src/app.c:31:6:app_process	16	static
+../Logic/Src/app.c:33:13:app_apply_executed_physical_steps	128	static
+../Logic/Src/app.c:69:6:app_process	24	static
