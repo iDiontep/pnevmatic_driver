@@ -66,6 +66,11 @@ static void app_apply_executed_physical_steps(uint32_t steps, bool motor_dir_fwd
   }
 }
 
+void app_flip_dir_after_limit_stop(void)
+{
+  tb6560_set_direction_forward(!motor_data.direction_forward);
+}
+
 void app_process(void)
 {
   limits_update();
@@ -88,7 +93,13 @@ void app_process(void)
       (dir >= 0) ? fwd : !fwd;
 
   if (limits_logical_min_engaged() && toward_logical_min)
+  {
     tb6560_stop_steps();
+    app_flip_dir_after_limit_stop();
+  }
   else if (limits_logical_max_engaged() && toward_logical_max)
+  {
     tb6560_stop_steps();
+    app_flip_dir_after_limit_stop();
+  }
 }

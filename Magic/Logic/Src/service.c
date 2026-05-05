@@ -130,6 +130,7 @@ void service_calibrate_limits(void)
       if (limits_logical_min_engaged())
       {
         tb6560_stop_steps();
+        app_flip_dir_after_limit_stop();
         goto phase_a_done;
       }
       if (phase_timed_out(ta))
@@ -160,6 +161,7 @@ phase_a_done:
       app.settings.position_max = total_steps;
       app.data.current_position    = total_steps;
       tb6560_stop_steps();
+      app_flip_dir_after_limit_stop();
       (void)tb6560_take_pending_move(NULL, NULL);
       tb6560_motor_enable(false);
       app.settings.status = APS_STATUS_CALIB_OK;
@@ -181,6 +183,7 @@ phase_a_done:
       {
         uint32_t rem = motor_data.steps_remaining;
         tb6560_stop_steps();
+        app_flip_dir_after_limit_stop();
         total_steps += chunk - rem;
         app.settings.position_max = total_steps;
         app.data.current_position    = total_steps;

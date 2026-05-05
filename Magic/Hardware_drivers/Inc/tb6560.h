@@ -28,6 +28,17 @@ extern "C" {
 #define TB6560_EN_ASSERTED_LOW 1
 #endif
 
+/** Разгон/торможение MOVE: шагов между сменами частоты и приращение в Гц. */
+#ifndef TB6560_RAMP_STEP_INTERVAL
+#define TB6560_RAMP_STEP_INTERVAL 10U
+#endif
+#ifndef TB6560_RAMP_HZ_STEP
+#define TB6560_RAMP_HZ_STEP 10U
+#endif
+#ifndef TB6560_RAMP_MIN_HZ
+#define TB6560_RAMP_MIN_HZ 100U
+#endif
+
 void tb6560_init(TIM_HandleTypeDef *htim_step);
 
 void tb6560_motor_enable(bool on);
@@ -51,10 +62,18 @@ typedef struct motor
   bool motor_enabled;
   bool direction_forward;
   volatile tb6560_motion_t motion;
-  uint32_t step_hz;
+  /** Текущая частота STEP (MOVE с рампой — мгновенная; RUN — заданная). */
+  volatile uint32_t step_hz;
   volatile uint32_t steps_remaining;
   /** Задано при старте MOVE (диспетчеризация позиции). */
   volatile uint32_t move_steps_planned;
+  /** Пиковая частота профиля MOVE (после разгона). */
+  volatile uint32_t ramp_peak_hz;
+  /** Число шагов фазы разгона / торможения (симметрично при полном ходе). */
+  volatile uint32_t ramp_accel_steps;
+  volatile uint32_t ramp_decel_steps;
+  /** true — короткий ход или цель ≤ TB6560_RAMP_MIN_HZ: без ступеней, постоянная частота. */
+  volatile bool ramp_flat_move;
   /** Шаги, отданные при последнем выходе из MOVE (ISR или stop_steps); обнуляется take. */
   volatile uint32_t pending_executed_steps;
   /** Направление DIR на момент записи pending_executed_steps (для current_position). */
@@ -79,7 +98,8 @@ void tb6560_set_step_rate_hz(uint32_t hz);
 void tb6560_stop_steps(void);
 
 /**
- * Ровно @p steps импульсов CLK при частоте @p step_hz, счёт в прерывании TIM.
+ * Ровно @p steps импульсов CLK; счёт в прерывании TIM.
+ * @p step_hz — целевая пиковая частота (крейсер); разгон/торможение — см. TB6560_RAMP_* в tb6560.h.
  * Возврат сразу; по завершении переход в TB6560_MOTION_IDLE.
  * Новая команда RUN/MOVE/STOP отменяет текущую.
  */

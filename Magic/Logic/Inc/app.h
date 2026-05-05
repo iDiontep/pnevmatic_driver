@@ -54,6 +54,9 @@ extern const app_t dflt_app_params;
  */
 void app_process(void);
 
+/** Инвертировать DIR после остановки по концевику (отъезд от упора при следующем MOVE). */
+void app_flip_dir_after_limit_stop(void);
+
 #ifdef __cplusplus
 }
 #endif
