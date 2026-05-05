@@ -11,6 +11,16 @@
 
 #include <stdint.h>
 
+#ifndef TB6560_RAMP_STEP_INTERVAL
+#define TB6560_RAMP_STEP_INTERVAL 10U
+#endif
+#ifndef TB6560_RAMP_HZ_STEP
+#define TB6560_RAMP_HZ_STEP 10U
+#endif
+#ifndef TB6560_RAMP_MIN_HZ
+#define TB6560_RAMP_MIN_HZ 100U
+#endif
+
 app_t app = {0};
 
 const app_t dflt_app_params = {
@@ -21,6 +31,9 @@ const app_t dflt_app_params = {
             .position_max  = 0U,
             .position_dir  = 1,
             .motor_speed   = 1000U,
+            .ramp_step_interval = TB6560_RAMP_STEP_INTERVAL,
+            .ramp_hz_step       = TB6560_RAMP_HZ_STEP,
+            .ramp_min_hz        = TB6560_RAMP_MIN_HZ,
         },
     .data =
         {

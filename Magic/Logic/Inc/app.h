@@ -21,6 +21,10 @@ typedef struct
   uint32_t position_max;
   int32_t  position_dir; /**< логический смысл лимитов: 1 или -1 */
   uint32_t motor_speed; /**< Гц STEP; 0 недопустим в протоколе — подставить дефолт 1000 */
+  /** Параметры разгона/торможения MOVE (калибровка фазы C или дефолты TB6560_RAMP_*). */
+  uint32_t ramp_step_interval;
+  uint32_t ramp_hz_step;
+  uint32_t ramp_min_hz;
 } app_settings_t;
 
 /** DFLT и состояние «ещё не откалибровано» по умолчанию */

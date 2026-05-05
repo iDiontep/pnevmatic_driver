@@ -39,6 +39,9 @@ extern "C" {
 #define TB6560_RAMP_MIN_HZ 100U
 #endif
 
+/** Профиль MOVE (APS): установить перед MOVE; кламп и подстановка дефолтов при 0. */
+void tb6560_set_move_ramp(uint32_t step_interval, uint32_t hz_step, uint32_t min_hz);
+
 void tb6560_init(TIM_HandleTypeDef *htim_step);
 
 void tb6560_motor_enable(bool on);
@@ -72,7 +75,7 @@ typedef struct motor
   /** Число шагов фазы разгона / торможения (симметрично при полном ходе). */
   volatile uint32_t ramp_accel_steps;
   volatile uint32_t ramp_decel_steps;
-  /** true — короткий ход или цель ≤ TB6560_RAMP_MIN_HZ: без ступеней, постоянная частота. */
+  /** true — короткий ход или цель ≤ ramp_min: без ступеней, постоянная частота. */
   volatile bool ramp_flat_move;
   /** Шаги, отданные при последнем выходе из MOVE (ISR или stop_steps); обнуляется take. */
   volatile uint32_t pending_executed_steps;
@@ -99,7 +102,7 @@ void tb6560_stop_steps(void);
 
 /**
  * Ровно @p steps импульсов CLK; счёт в прерывании TIM.
- * @p step_hz — целевая пиковая частота (крейсер); разгон/торможение — см. TB6560_RAMP_* в tb6560.h.
+ * @p step_hz — целевая пиковая частота (крейсер); разгон/торможение — tb6560_set_move_ramp / APS.
  * Возврат сразу; по завершении переход в TB6560_MOTION_IDLE.
  * Новая команда RUN/MOVE/STOP отменяет текущую.
  */

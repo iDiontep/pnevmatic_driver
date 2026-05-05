@@ -8,6 +8,32 @@
 
 static TIM_HandleTypeDef *s_htim;
 
+/** Активный профиль разгона MOVE (APS / tb6560_set_move_ramp). */
+static uint32_t s_move_ramp_iv  = TB6560_RAMP_STEP_INTERVAL;
+static uint32_t s_move_ramp_dhz = TB6560_RAMP_HZ_STEP;
+static uint32_t s_move_ramp_min = TB6560_RAMP_MIN_HZ;
+
+void tb6560_set_move_ramp(uint32_t step_interval, uint32_t hz_step, uint32_t min_hz)
+{
+  if (step_interval == 0U)
+    step_interval = TB6560_RAMP_STEP_INTERVAL;
+  if (hz_step == 0U)
+    hz_step = TB6560_RAMP_HZ_STEP;
+  if (min_hz == 0U)
+    min_hz = TB6560_RAMP_MIN_HZ;
+
+  if (step_interval > 500U)
+    step_interval = 500U;
+  if (hz_step > 500U)
+    hz_step = 500U;
+  if (min_hz > 100000U)
+    min_hz = 100000U;
+
+  s_move_ramp_iv  = step_interval;
+  s_move_ramp_dhz = hz_step;
+  s_move_ramp_min = min_hz;
+}
+
 motor_t motor_data = {
     .motor_enabled = false,
     .direction_forward = true,
@@ -99,16 +125,16 @@ static void apply_step_timing(uint32_t hz)
 }
 
 /**
- * Профиль MOVE: accel_steps / decel_steps кратны TB6560_RAMP_STEP_INTERVAL или нули.
+ * Профиль MOVE: accel_steps / decel_steps кратны активному step_interval или нули.
  * При коротком ходе — усечённый треугольник (меньший peak_hz).
  */
 static void move_compute_ramp(uint32_t planned, uint32_t target_hz,
                               uint32_t *accel_out, uint32_t *decel_out,
                               uint32_t *peak_out, bool *flat_out)
 {
-  const uint32_t min_hz = TB6560_RAMP_MIN_HZ;
-  const uint32_t delta  = TB6560_RAMP_HZ_STEP;
-  const uint32_t iv     = TB6560_RAMP_STEP_INTERVAL;
+  const uint32_t min_hz = s_move_ramp_min;
+  const uint32_t delta  = s_move_ramp_dhz;
+  const uint32_t iv     = s_move_ramp_iv;
 
   if (target_hz <= min_hz)
   {
@@ -268,7 +294,7 @@ static void move_steps_begin(uint32_t steps, uint32_t step_hz_target)
   }
   else
   {
-    start_hz                   = TB6560_RAMP_MIN_HZ;
+    start_hz                   = s_move_ramp_min;
     motor_data.ramp_flat_move  = false;
     motor_data.ramp_peak_hz    = peak_hz;
     motor_data.ramp_accel_steps = accel;
@@ -337,9 +363,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   const uint32_t accel_s = motor_data.ramp_accel_steps;
   const uint32_t decel_s = motor_data.ramp_decel_steps;
   const uint32_t peak    = motor_data.ramp_peak_hz;
-  const uint32_t iv      = TB6560_RAMP_STEP_INTERVAL;
-  const uint32_t delta   = TB6560_RAMP_HZ_STEP;
-  const uint32_t min_hz  = TB6560_RAMP_MIN_HZ;
+  const uint32_t iv      = s_move_ramp_iv;
+  const uint32_t delta   = s_move_ramp_dhz;
+  const uint32_t min_hz  = s_move_ramp_min;
 
   const bool in_accel = (exec <= accel_s);
   const bool in_decel = (rem <= decel_s);
