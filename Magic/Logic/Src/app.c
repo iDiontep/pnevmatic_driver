@@ -85,7 +85,14 @@ void app_process(void)
     app_apply_executed_physical_steps(done, dir_fwd);
 
   if (motor_data.motion == TB6560_MOTION_IDLE)
+  {
+    if (motor_data.ramp_limit_soft_active)
+    {
+      motor_data.ramp_limit_soft_active = false;
+      app_flip_dir_after_limit_stop();
+    }
     return;
+  }
 
   const int32_t dir = app.settings.position_dir;
   const bool    fwd = motor_data.direction_forward;
@@ -97,12 +104,30 @@ void app_process(void)
 
   if (limits_logical_min_engaged() && toward_logical_min)
   {
-    tb6560_stop_steps();
-    app_flip_dir_after_limit_stop();
+    if (motor_data.motion == TB6560_MOTION_MOVE)
+    {
+      if (!motor_data.ramp_limit_soft_active)
+        tb6560_move_soft_stop_at_limit();
+    }
+    else if (motor_data.motion != TB6560_MOTION_IDLE)
+    {
+      tb6560_stop_steps();
+      app_flip_dir_after_limit_stop();
+    }
+    return;
   }
   else if (limits_logical_max_engaged() && toward_logical_max)
   {
-    tb6560_stop_steps();
-    app_flip_dir_after_limit_stop();
+    if (motor_data.motion == TB6560_MOTION_MOVE)
+    {
+      if (!motor_data.ramp_limit_soft_active)
+        tb6560_move_soft_stop_at_limit();
+    }
+    else if (motor_data.motion != TB6560_MOTION_IDLE)
+    {
+      tb6560_stop_steps();
+      app_flip_dir_after_limit_stop();
+    }
+    return;
   }
 }

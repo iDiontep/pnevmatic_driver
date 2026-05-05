@@ -126,7 +126,7 @@ static void receiver_execute_position(uint32_t X)
   tb6560_move_steps_start(steps, hz);
 
   bool aborted_by_limit = false;
-  while (motor_data.steps_remaining > 0U)
+  while (motor_data.motion != TB6560_MOTION_IDLE)
   {
     limits_update();
     const int32_t dir = app.settings.position_dir;
@@ -138,14 +138,24 @@ static void receiver_execute_position(uint32_t X)
 
     if (limits_logical_min_engaged() && toward_logical_min)
     {
-      tb6560_stop_steps();
+      tb6560_move_soft_stop_at_limit();
+      while (motor_data.motion != TB6560_MOTION_IDLE)
+      {
+        limits_update();
+      }
+      motor_data.ramp_limit_soft_active = false;
       app_flip_dir_after_limit_stop();
       aborted_by_limit = true;
       break;
     }
     if (limits_logical_max_engaged() && toward_logical_max)
     {
-      tb6560_stop_steps();
+      tb6560_move_soft_stop_at_limit();
+      while (motor_data.motion != TB6560_MOTION_IDLE)
+      {
+        limits_update();
+      }
+      motor_data.ramp_limit_soft_active = false;
       app_flip_dir_after_limit_stop();
       aborted_by_limit = true;
       break;

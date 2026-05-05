@@ -47,6 +47,7 @@ motor_t motor_data = {
     .ramp_flat_move = false,
     .pending_executed_steps = 0U,
     .pending_dir_snap = false,
+    .ramp_limit_soft_active = false,
 };
 
 bool tb6560_take_pending_move(uint32_t *steps_out, bool *dir_forward_out)
@@ -207,6 +208,7 @@ void tb6560_init(TIM_HandleTypeDef *htim_step)
   motor_data.move_steps_planned       = 0U;
   motor_data.pending_executed_steps   = 0U;
   motor_data.pending_dir_snap         = false;
+  motor_data.ramp_limit_soft_active   = false;
   ramp_reset_fields();
   tb6560_set_direction_forward(true);
   tb6560_stop_steps();
@@ -231,10 +233,14 @@ void tb6560_set_direction_forward(bool forward)
                     forward ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
-void tb6560_stop_steps(void)
+static void tb6560_stop_steps_impl(bool preserve_limit_soft_flip_pending)
 {
   if (!s_htim)
     return;
+
+  const bool had_soft_pending = motor_data.ramp_limit_soft_active;
+
+  motor_data.ramp_limit_soft_active = false;
 
   __HAL_TIM_DISABLE_IT(s_htim, TIM_IT_UPDATE);
   HAL_TIM_PWM_Stop(s_htim, TIM_CHANNEL_1);
@@ -251,6 +257,78 @@ void tb6560_stop_steps(void)
   motor_data.motion = TB6560_MOTION_IDLE;
   motor_data.step_hz = 0U;
   ramp_reset_fields();
+
+  if (preserve_limit_soft_flip_pending && had_soft_pending)
+    motor_data.ramp_limit_soft_active = true;
+}
+
+void tb6560_stop_steps(void)
+{
+  tb6560_stop_steps_impl(false);
+}
+
+void tb6560_move_soft_stop_at_limit(void)
+{
+  if (!s_htim || motor_data.motion != TB6560_MOTION_MOVE || motor_data.steps_remaining == 0U)
+  {
+    tb6560_stop_steps_impl(false);
+    return;
+  }
+
+  if (motor_data.ramp_limit_soft_active)
+    return;
+
+  motor_data.ramp_limit_soft_active = true;
+
+  const uint32_t min_hz = s_move_ramp_min;
+  const uint32_t delta  = s_move_ramp_dhz;
+  const uint32_t iv     = s_move_ramp_iv;
+
+  __disable_irq();
+  const uint32_t R = motor_data.steps_remaining;
+  const uint32_t P = motor_data.move_steps_planned;
+  const uint32_t cur_hz = motor_data.step_hz;
+  __enable_irq();
+
+  if (R == 0U || P == 0U)
+  {
+    tb6560_stop_steps_impl(true);
+    return;
+  }
+
+  uint32_t tiers = 0U;
+  if (cur_hz > min_hz)
+    tiers = (cur_hz - min_hz + delta - 1U) / delta;
+
+  if (tiers == 0U || iv == 0U)
+  {
+    tb6560_stop_steps_impl(true);
+    return;
+  }
+
+  uint32_t decel_need = tiers * iv;
+  uint32_t actual_decel = (decel_need < R) ? decel_need : R;
+  actual_decel          = (actual_decel / iv) * iv;
+
+  if (actual_decel == 0U && tiers > 0U)
+    actual_decel = (R < iv) ? R : iv;
+
+  if (actual_decel == 0U)
+  {
+    tb6560_stop_steps_impl(true);
+    return;
+  }
+
+  const uint32_t executed = P - R;
+
+  __disable_irq();
+  motor_data.move_steps_planned = executed + actual_decel;
+  motor_data.steps_remaining = actual_decel;
+  motor_data.ramp_flat_move = false;
+  motor_data.ramp_accel_steps = 0U;
+  motor_data.ramp_decel_steps = actual_decel;
+  motor_data.ramp_peak_hz = cur_hz;
+  __enable_irq();
 }
 
 void tb6560_set_step_rate_hz(uint32_t hz)
@@ -280,6 +358,8 @@ static void move_steps_begin(uint32_t steps, uint32_t step_hz_target)
   bool     flat;
 
   move_compute_ramp(steps, step_hz_target, &accel, &decel, &peak_hz, &flat);
+
+  motor_data.ramp_limit_soft_active = false;
 
   __HAL_TIM_DISABLE_IT(s_htim, TIM_IT_UPDATE);
 
@@ -399,20 +479,30 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     return;
   }
 
-  /* торможение */
-  if (in_decel && (rem % iv) == 0U && rem < decel_s)
+  /* торможение: как разгон — через каждые iv шагов внутри фазы (decel_done).
+   * Старый критерий (rem % iv) не давал ни одного шага при decel_s == iv — типично для
+   * короткого дожима после упора (tiers == 1 → decel_need == iv). */
+  if (in_decel && rem > 0U)
   {
-    uint32_t hz = motor_data.step_hz;
-    if (hz > min_hz + delta)
-      hz -= delta;
-    else
-      hz = min_hz;
+    const uint32_t decel_done = decel_s - rem;
+    bool           adjust     = (decel_done > 0U && (decel_done % iv) == 0U);
+    if (!adjust && decel_s <= iv && decel_done == 1U)
+      adjust = true;
 
-    if (hz != motor_data.step_hz)
+    if (adjust)
     {
-      tim_configure_pwm_hz(hz);
-      motor_data.step_hz = hz;
-      tim_restart_pwm_move_it();
+      uint32_t hz = motor_data.step_hz;
+      if (hz > min_hz + delta)
+        hz -= delta;
+      else
+        hz = min_hz;
+
+      if (hz != motor_data.step_hz)
+      {
+        tim_configure_pwm_hz(hz);
+        motor_data.step_hz = hz;
+        tim_restart_pwm_move_it();
+      }
     }
   }
 }

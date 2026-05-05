@@ -30,13 +30,13 @@ extern "C" {
 
 /** Разгон/торможение MOVE: шагов между сменами частоты и приращение в Гц. */
 #ifndef TB6560_RAMP_STEP_INTERVAL
-#define TB6560_RAMP_STEP_INTERVAL 5U
+#define TB6560_RAMP_STEP_INTERVAL 5u
 #endif
 #ifndef TB6560_RAMP_HZ_STEP
-#define TB6560_RAMP_HZ_STEP 10U
+#define TB6560_RAMP_HZ_STEP 5U
 #endif
 #ifndef TB6560_RAMP_MIN_HZ
-#define TB6560_RAMP_MIN_HZ 200U
+#define TB6560_RAMP_MIN_HZ 80U
 #endif
 
 /** Профиль MOVE (APS): установить перед MOVE; кламп и подстановка дефолтов при 0. */
@@ -81,6 +81,8 @@ typedef struct motor
   volatile uint32_t pending_executed_steps;
   /** Направление DIR на момент записи pending_executed_steps (для current_position). */
   volatile bool pending_dir_snap;
+  /** После упора в концевик: ждём IDLE и flip DIR (не сбрасывать обычным STOP). */
+  volatile bool ramp_limit_soft_active;
 } motor_t;
 
 /** Текущее состояние мотора; обновляется драйвером TB6560 и при MOT-командах по USB. */
@@ -99,6 +101,9 @@ void tb6560_get_status(motor_t *out);
 void tb6560_set_step_rate_hz(uint32_t hz);
 
 void tb6560_stop_steps(void);
+
+/** MOVE у концевика: усечь оставшийся ход до фазы торможения по текущей частоте. */
+void tb6560_move_soft_stop_at_limit(void);
 
 /**
  * Ровно @p steps импульсов CLK; счёт в прерывании TIM.
