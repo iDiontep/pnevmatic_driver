@@ -30,13 +30,13 @@ extern "C" {
 
 /** Разгон/торможение MOVE: шагов между сменами частоты и приращение в Гц. */
 #ifndef TB6560_RAMP_STEP_INTERVAL
-#define TB6560_RAMP_STEP_INTERVAL 10U
+#define TB6560_RAMP_STEP_INTERVAL 5U
 #endif
 #ifndef TB6560_RAMP_HZ_STEP
 #define TB6560_RAMP_HZ_STEP 10U
 #endif
 #ifndef TB6560_RAMP_MIN_HZ
-#define TB6560_RAMP_MIN_HZ 100U
+#define TB6560_RAMP_MIN_HZ 200U
 #endif
 
 /** Профиль MOVE (APS): установить перед MOVE; кламп и подстановка дефолтов при 0. */

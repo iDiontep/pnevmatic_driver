@@ -11,16 +11,6 @@
 
 #include <stdint.h>
 
-#ifndef TB6560_RAMP_STEP_INTERVAL
-#define TB6560_RAMP_STEP_INTERVAL 10U
-#endif
-#ifndef TB6560_RAMP_HZ_STEP
-#define TB6560_RAMP_HZ_STEP 10U
-#endif
-#ifndef TB6560_RAMP_MIN_HZ
-#define TB6560_RAMP_MIN_HZ 100U
-#endif
-
 app_t app = {0};
 
 const app_t dflt_app_params = {
