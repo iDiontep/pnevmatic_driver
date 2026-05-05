@@ -1,3 +1,3 @@
 ../Hardware_drivers/Src/eeprom.c:33:17:eeprom_chk	24	static
-../Hardware_drivers/Src/eeprom.c:40:6:eeprom_try_load	64	static
-../Hardware_drivers/Src/eeprom.c:62:6:eeprom_save	104	static
+../Hardware_drivers/Src/eeprom.c:41:6:eeprom_try_load	72	static
+../Hardware_drivers/Src/eeprom.c:63:6:eeprom_save	112	static

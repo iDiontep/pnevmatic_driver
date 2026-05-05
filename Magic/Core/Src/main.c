@@ -114,8 +114,10 @@ int main(void)
       app.settings = s;
   }
   tb6560_init(&htim2);
+  tb6560_set_move_ramp(app.settings.ramp_step_interval, app.settings.ramp_hz_step,
+                       app.settings.ramp_min_hz);
   limits_init();
-  if (app.settings.status != APS_STATUS_CALIB_OK)
+  if (app.settings.status)
     service_calibrate_limits();
   /* USER CODE END 2 */
 

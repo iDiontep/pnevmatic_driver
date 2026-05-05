@@ -21,6 +21,10 @@ typedef struct
   uint32_t position_max;
   int32_t  position_dir; /**< логический смысл лимитов: 1 или -1 */
   uint32_t motor_speed; /**< Гц STEP; 0 недопустим в протоколе — подставить дефолт 1000 */
+  /** Параметры разгона/торможения MOVE (калибровка фазы C или дефолты TB6560_RAMP_*). */
+  uint32_t ramp_step_interval;
+  uint32_t ramp_hz_step;
+  uint32_t ramp_min_hz;
 } app_settings_t;
 
 /** DFLT и состояние «ещё не откалибровано» по умолчанию */
@@ -53,6 +57,9 @@ extern const app_t dflt_app_params;
  *        Вызывается из main() в цикле while(1).
  */
 void app_process(void);
+
+/** Инвертировать DIR после остановки по концевику (отъезд от упора при следующем MOVE). */
+void app_flip_dir_after_limit_stop(void);
 
 #ifdef __cplusplus
 }

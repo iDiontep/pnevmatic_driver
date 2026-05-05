@@ -18,7 +18,7 @@
 #define APS_FLASH_PAGE_ADDR ((uint32_t)(FLASH_BASE + 256U * 1024U - FLASH_PAGE_SIZE))
 
 #define APS_EEPROM_MAGIC ((uint32_t)0xC0ADBEE5u)
-#define APS_EEPROM_VER ((uint32_t)1u)
+#define APS_EEPROM_VER ((uint32_t)2u)
 
 typedef struct
 {
@@ -28,13 +28,14 @@ typedef struct
   uint32_t       chk;
 } eeprom_aps_store_t;
 
-_Static_assert(sizeof(eeprom_aps_store_t) == 32u, "eeprom packing");
+_Static_assert(sizeof(eeprom_aps_store_t) == 44u, "eeprom packing");
 
 static uint32_t eeprom_chk(const eeprom_aps_store_t *b)
 {
   const app_settings_t *s = &b->settings;
   return b->magic ^ b->version ^ s->status ^ s->position_min ^ s->position_max
-         ^ (uint32_t)s->position_dir ^ s->motor_speed;
+         ^ (uint32_t)s->position_dir ^ s->motor_speed ^ s->ramp_step_interval
+         ^ s->ramp_hz_step ^ s->ramp_min_hz;
 }
 
 bool eeprom_try_load(app_settings_t *settings)

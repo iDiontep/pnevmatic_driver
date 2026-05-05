@@ -34,19 +34,19 @@
  *  EFGH SET APD MINUTES|BUTTON|CURRENT_POSITION <число>
  *  EFGH GET APD MINUTES|BUTTON|CURRENT_POSITION
  *
+ *  EFGH POSITION <x>           — поезд к абсолютной логической позиции x (ответ: POSITION <факт>); APS откалиброван
+ *
  *  === Категория MOT (драйвер TB6560) ===
  *  Состояние: motor_data / tb6560_get_status().
  *  EFGH SET MOT EN 0|1          — ответ: MOT EN <0|1> + CRLF
  *  EFGH SET MOT DIR 0|1|REV|FWD — ответ: MOT DIR <0|1> + CRLF
- *  EFGH SET MOT RUN <X>        — поезд к абсолютной логической позиции X (концы APS POSITION_MIN/MAX);
- *                                ответ: MOT RUN <текущая позиция после остановки> + CRLF; APS должен быть откалиброван
  *  EFGH SET MOT HZ <hz>        — непрерывное вращение на hz Гц; ответ: MOT HZ <hz> (hz=0 — стоп такта)
  *  EFGH SET MOT STOP           — ответ: MOT RUN 0 + CRLF
  *  EFGH SET MOT MOVE <steps> <hz> — ответ: MOT MOVE <steps> <hz> + CRLF; steps и hz > 0
  *  EFGH GET MOT STAT | ALL    — ответ:
  *      MOT STAT EN=<0|1> DIR=<0|1> MODE=IDLE|RUN|MOVE HZ=<гц> REM=<осталось шагов> + CRLF
  *
- *  Новая RUN / MOVE / STOP отменяет текущее движение (отдельного busy нет).
+ *  Новая POSITION / MOVE / STOP / HZ отменяет текущее движение (отдельного busy нет).
  */
 
 #ifndef RECEIVER_H_

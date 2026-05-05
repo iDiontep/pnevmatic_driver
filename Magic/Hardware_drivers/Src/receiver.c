@@ -14,8 +14,7 @@
  *
  *  Категории: APS (настройки), APD (данные), MOT (TB6560) — см. receiver.h.
  *
- *  При новой команде RUN / MOVE / STOP текущее движение отменяется (нет HGFE busy).
- *  MOT RUN — переезд к координате; непрерывное — MOT HZ.
+ *  Позиционирование: EFGH POSITION <x> (бывший MOT RUN). MOVE / STOP / HZ — см. MOT.
  */
 
 #include "receiver.h"
@@ -82,6 +81,99 @@ static void mot_reply_stat(void)
   }
 }
 
+/** Абсолютная логическая позиция; ответ: POSITION <факт> + CRLF. */
+static void receiver_execute_position(uint32_t X)
+{
+  if (app.settings.status != APS_STATUS_CALIB_OK)
+  {
+    const char error_response[] = "HGFE Error - APS not calibrated\r\n";
+    CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
+    return;
+  }
+
+  uint32_t pos_min = app.settings.position_min;
+  uint32_t pos_max = app.settings.position_max;
+  if (pos_max <= pos_min)
+  {
+    const char error_response[] = "HGFE Error - invalid APS position range\r\n";
+    CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
+    return;
+  }
+
+  if (X < pos_min)
+    X = pos_min;
+  if (X > pos_max)
+    X = pos_max;
+
+  int64_t cur   = (int64_t)app.data.current_position;
+  int64_t tgt   = (int64_t)X;
+  int64_t delta = tgt - cur;
+  if (delta == 0)
+  {
+    receiver_replyf("POSITION %lu\r\n", (unsigned long)X);
+    return;
+  }
+
+  uint32_t steps = (uint32_t)(delta < 0 ? -delta : delta);
+  uint32_t hz    = app.settings.motor_speed;
+  if (hz == 0U)
+    hz = 1000U;
+
+  const bool logical_increase = delta > 0;
+  tb6560_set_direction_forward(
+      (app.settings.position_dir >= 0) ? logical_increase : !logical_increase);
+
+  tb6560_move_steps_start(steps, hz);
+
+  bool aborted_by_limit = false;
+  while (motor_data.motion != TB6560_MOTION_IDLE)
+  {
+    limits_update();
+    const int32_t dir = app.settings.position_dir;
+    const bool    fwd = motor_data.direction_forward;
+    const bool toward_logical_min =
+        (dir >= 0) ? !fwd : fwd;
+    const bool toward_logical_max =
+        (dir >= 0) ? fwd : !fwd;
+
+    if (limits_logical_min_engaged() && toward_logical_min)
+    {
+      tb6560_move_soft_stop_at_limit();
+      while (motor_data.motion != TB6560_MOTION_IDLE)
+      {
+        limits_update();
+      }
+      motor_data.ramp_limit_soft_active = false;
+      app_flip_dir_after_limit_stop();
+      aborted_by_limit = true;
+      break;
+    }
+    if (limits_logical_max_engaged() && toward_logical_max)
+    {
+      tb6560_move_soft_stop_at_limit();
+      while (motor_data.motion != TB6560_MOTION_IDLE)
+      {
+        limits_update();
+      }
+      motor_data.ramp_limit_soft_active = false;
+      app_flip_dir_after_limit_stop();
+      aborted_by_limit = true;
+      break;
+    }
+  }
+
+  if (!aborted_by_limit)
+    app.data.current_position = X;
+  else if (limits_logical_min_engaged())
+    app.data.current_position = pos_min;
+  else if (limits_logical_max_engaged())
+    app.data.current_position = pos_max;
+
+  (void)tb6560_take_pending_move(NULL, NULL);
+
+  receiver_replyf("POSITION %lu\r\n", (unsigned long)app.data.current_position);
+}
+
 /* Простейший CLI-парсер по образцу uart_ble: команды начинаются с префикса EFGH */
 static void cli_process(char *buffer)
 {
@@ -120,6 +212,21 @@ static void cli_process(char *buffer)
   {
     tokens[argc++] = token;
     token = strtok(NULL, " ,=\r\n");
+  }
+
+  /* EFGH POSITION <x> — абсолютная логическая позиция (шагами, как MOT MOVE по отсчёту). */
+  if (tokens[0] != NULL && strcmp(tokens[0], "POSITION") == 0)
+  {
+    if (argc != 2 || tokens[1] == NULL)
+    {
+      const char error_response[] =
+          "HGFE Error - Invalid POSITION (use EFGH POSITION <x>)\r\n";
+      CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
+      return;
+    }
+    unsigned long tgt = strtoul(tokens[1], NULL, 10);
+    receiver_execute_position((uint32_t)tgt);
+    return;
   }
 
   if (argc < 2 || tokens[0] == NULL || tokens[1] == NULL)
@@ -374,7 +481,7 @@ static void cli_process(char *buffer)
         return;
       }
 
-      /** Непрерывное вращение только через MOT HZ ... (RUN переопределён на позицию). */
+      /** Непрерывное вращение: MOT HZ. */
       if (argc >= 4 && strcmp(tokens[2], "HZ") == 0)
       {
         unsigned long hz = strtoul(tokens[3], NULL, 10);
@@ -383,88 +490,6 @@ static void cli_process(char *buffer)
         else
           tb6560_set_step_rate_hz((uint32_t)hz);
         receiver_replyf("MOT HZ %lu\r\n", (unsigned long)hz);
-        return;
-      }
-
-      /** RUN <X> — абсолютная логическая позиция в [APS POSITION_MIN, POSITION_MAX]. */
-      if (argc >= 4 && strcmp(tokens[2], "RUN") == 0)
-      {
-        if (app.settings.status != APS_STATUS_CALIB_OK)
-        {
-          const char error_response[] = "HGFE Error - APS not calibrated\r\n";
-          CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
-          return;
-        }
-
-        uint32_t pos_min = app.settings.position_min;
-        uint32_t pos_max = app.settings.position_max;
-        if (pos_max <= pos_min)
-        {
-          const char error_response[] = "HGFE Error - invalid APS position range\r\n";
-          CDC_Transmit_FS((uint8_t *)error_response, (uint16_t)(sizeof(error_response) - 1));
-          return;
-        }
-
-        unsigned long target_ul = strtoul(tokens[3], NULL, 10);
-        uint32_t          X       = (uint32_t)target_ul;
-        if (X < pos_min)
-          X = pos_min;
-        if (X > pos_max)
-          X = pos_max;
-
-        int64_t cur   = (int64_t)app.data.current_position;
-        int64_t tgt   = (int64_t)X;
-        int64_t delta = tgt - cur;
-        if (delta == 0)
-        {
-          receiver_replyf("MOT RUN %lu\r\n", (unsigned long)X);
-          return;
-        }
-
-        uint32_t steps = (uint32_t)(delta < 0 ? -delta : delta);
-        uint32_t hz    = app.settings.motor_speed;
-        if (hz == 0U)
-          hz = 1000U;
-
-        const bool logical_increase = delta > 0;
-        tb6560_set_direction_forward(
-            (app.settings.position_dir >= 0) ? logical_increase : !logical_increase);
-
-        tb6560_move_steps_start(steps, hz);
-
-        bool aborted_by_limit = false;
-        while (motor_data.steps_remaining > 0U)
-        {
-          limits_update();
-          const int32_t dir = app.settings.position_dir;
-          const bool    fwd = motor_data.direction_forward;
-          const bool toward_logical_min =
-              (dir >= 0) ? !fwd : fwd;
-          const bool toward_logical_max =
-              (dir >= 0) ? fwd : !fwd;
-
-          if (limits_logical_min_engaged() && toward_logical_min)
-          {
-            tb6560_stop_steps();
-            aborted_by_limit = true;
-            break;
-          }
-          if (limits_logical_max_engaged() && toward_logical_max)
-          {
-            tb6560_stop_steps();
-            aborted_by_limit = true;
-            break;
-          }
-        }
-
-        if (!aborted_by_limit)
-          app.data.current_position = X;
-        else if (limits_logical_min_engaged())
-          app.data.current_position = pos_min;
-        else if (limits_logical_max_engaged())
-          app.data.current_position = pos_max;
-
-        receiver_replyf("MOT RUN %lu\r\n", (unsigned long)app.data.current_position);
         return;
       }
 
